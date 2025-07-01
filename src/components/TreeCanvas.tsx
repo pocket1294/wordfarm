@@ -14,7 +14,7 @@ export default function TreeCanvas({ totalTextLength }: Props) {
     const r = Math.round(color1[0] + (color2[0] - color1[0]) * t);
     const g = Math.round(color1[1] + (color2[1] - color1[1]) * t);
     const b = Math.round(color1[2] + (color2[2] - color1[2]) * t);
-    return `rgba(${r},${g},${b},0.4)`; // ← 透明度0.15で文字が隠れない
+    return `rgba(${r},${g},${b},0.4)`; // 半透明で背景に溶け込む
   }
 
   function drawBranch(
@@ -32,9 +32,7 @@ export default function TreeCanvas({ totalTextLength }: Props) {
     const y2 = y - length * Math.cos(angle);
 
     const t = (maxDepth - depth) / maxDepth;
-
-    // 淡い茶→淡い緑（ベージュ〜ミント系）
-    const color = lerpColor([160, 130, 100], [144, 238, 144], t);
+    const color = lerpColor([160, 130, 100], [144, 238, 144], t); // 薄茶→薄緑
 
     ctx.strokeStyle = color;
     ctx.beginPath();
@@ -63,6 +61,8 @@ export default function TreeCanvas({ totalTextLength }: Props) {
     let lastTime = performance.now();
 
     function animate(time: number) {
+      if (!ctx) return; // ← TypeScript対策：ctxがnullなら抜ける
+
       if (time - lastTime >= interval) {
         ctx.clearRect(0, 0, width, height);
         drawBranch(ctx, width / 2, height, 30, 0, currentDepth, finalDepth);
