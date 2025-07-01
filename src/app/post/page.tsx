@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { addPost, subscribePosts, updatePostText } from '@/lib/firebase';
-import TreeCanvas from '@/components/TreeCanvas';
 
 type Post = {
   id: string;
@@ -33,7 +32,6 @@ export default function PostPage() {
     const unsubscribe = subscribePosts((newPosts) => {
       const el = postAreaRef.current;
       const wasAtBottom = isScrolledToBottom();
-      const prevScrollHeight = el?.scrollHeight || 0;
 
       const prevPost = posts[posts.length - 1];
       const newPost = newPosts[newPosts.length - 1];
@@ -41,9 +39,6 @@ export default function PostPage() {
       setPosts(newPosts);
 
       requestAnimationFrame(() => {
-        const nowScrollHeight = el?.scrollHeight || 0;
-        const hasNewLine = nowScrollHeight > prevScrollHeight;
-
         if (isInitialLoad.current) {
           isInitialLoad.current = false;
           scrollToBottom();
@@ -60,7 +55,7 @@ export default function PostPage() {
           }
         }
 
-        if (wasAtBottom && hasNewLine) {
+        if (wasAtBottom) {
           scrollToBottom();
         }
       });
@@ -96,18 +91,11 @@ export default function PostPage() {
       <div key={lineIndex} style={{ lineHeight: '1.5', margin: 0 }}>
         {[...line].map((char, i) => {
           const animate = globalIndex >= animateFrom;
-          const style = {
-            ...(animate && {
-              animationDelay: `${(globalIndex - animateFrom) * 0.05}s`,
-              opacity: 0,
-            }),
-            ...(!animate && {
-              opacity: 1,
-            }),
-          };
+          const style = animate
+            ? { animationDelay: `${(globalIndex - animateFrom) * 0.05}s`, opacity: 0 }
+            : { opacity: 1 };
           const className = animate ? 'letter' : '';
           globalIndex++;
-
           return (
             <span key={`${lineIndex}-${i}`} className={className} style={style}>
               {char}
@@ -117,8 +105,6 @@ export default function PostPage() {
       </div>
     ));
   }
-
-  const totalTextLength = posts.reduce((sum, post) => sum + post.text.length, 0);
 
   return (
     <>
@@ -132,8 +118,6 @@ export default function PostPage() {
         }
       `}</style>
 
-      <TreeCanvas totalTextLength={totalTextLength} />
-
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
         <header
           style={{
@@ -141,7 +125,7 @@ export default function PostPage() {
             textAlign: 'center',
             fontWeight: 'bold',
             fontSize: '1.8rem',
-            backgroundColor: 'transparent',
+            backgroundColor: '#fafafa',
             borderBottom: '1px solid #ccc',
             userSelect: 'none',
             color: '#000',
@@ -160,7 +144,7 @@ export default function PostPage() {
             whiteSpace: 'pre-wrap',
             overflowWrap: 'break-word',
             wordBreak: 'break-word',
-            background: 'transparent', // ← 修正ポイント
+            background: '#fff',
             color: '#000',
           }}
         >
@@ -177,7 +161,7 @@ export default function PostPage() {
             display: 'flex',
             padding: 8,
             borderTop: '1px solid #ccc',
-            background: 'transparent', // ← 修正ポイント
+            background: '#fafafa',
             alignItems: 'center',
           }}
         >
