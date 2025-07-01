@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { addPost, subscribePosts, updatePostText } from '@/lib/firebase';
+import TreeCanvas from '@/components/TreeCanvas';
 
 type Post = {
   id: string;
@@ -95,11 +96,16 @@ export default function PostPage() {
       <div key={lineIndex} style={{ lineHeight: '1.5', margin: 0 }}>
         {[...line].map((char, i) => {
           const animate = globalIndex >= animateFrom;
-          const style = animate
-            ? { animationDelay: `${(globalIndex - animateFrom) * 0.05}s` }
-            : {};
+          const style = {
+            ...(animate && {
+              animationDelay: `${(globalIndex - animateFrom) * 0.05}s`,
+              opacity: 0,
+            }),
+            ...(!animate && {
+              opacity: 1,
+            }),
+          };
           const className = animate ? 'letter' : '';
-
           globalIndex++;
 
           return (
@@ -112,19 +118,21 @@ export default function PostPage() {
     ));
   }
 
+  const totalTextLength = posts.reduce((sum, post) => sum + post.text.length, 0);
+
   return (
     <>
       <style>{`
         .letter {
-          opacity: 0;
           animation: fadeIn 1.5s ease forwards;
         }
-
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
         }
       `}</style>
+
+      <TreeCanvas totalTextLength={totalTextLength} />
 
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
         <header
@@ -133,9 +141,10 @@ export default function PostPage() {
             textAlign: 'center',
             fontWeight: 'bold',
             fontSize: '1.8rem',
-            backgroundColor: '#fafafa',
+            backgroundColor: 'transparent',
             borderBottom: '1px solid #ccc',
             userSelect: 'none',
+            color: '#000',
           }}
         >
           Word Farm
@@ -151,7 +160,8 @@ export default function PostPage() {
             whiteSpace: 'pre-wrap',
             overflowWrap: 'break-word',
             wordBreak: 'break-word',
-            background: '#fff',
+            background: 'transparent', // ← 修正ポイント
+            color: '#000',
           }}
         >
           {posts.map((post) => (
@@ -167,7 +177,7 @@ export default function PostPage() {
             display: 'flex',
             padding: 8,
             borderTop: '1px solid #ccc',
-            background: '#fafafa',
+            background: 'transparent', // ← 修正ポイント
             alignItems: 'center',
           }}
         >
@@ -186,6 +196,7 @@ export default function PostPage() {
               boxSizing: 'border-box',
               minHeight: 38,
               height: 38,
+              color: '#000',
             }}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
