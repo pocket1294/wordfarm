@@ -30,7 +30,7 @@ export default function PostPage() {
 
   useEffect(() => {
     const unsubscribe = subscribePosts((newPosts) => {
-      const el = postAreaRef.current;
+      //const el = postAreaRef.current;
       const wasAtBottom = isScrolledToBottom();
 
       const prevPost = posts[posts.length - 1];
