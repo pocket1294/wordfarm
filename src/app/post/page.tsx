@@ -96,7 +96,7 @@ export default function PostPage() {
         {[...line].map((char, i) => {
           const animate = globalIndex >= animateFrom;
           const style = animate
-            ? { opacity: 0, animationDelay: `${(globalIndex - animateFrom) * 0.05}s` }
+            ? { animationDelay: `${(globalIndex - animateFrom) * 0.05}s` }
             : {};
           const className = animate ? 'letter' : '';
 
@@ -116,6 +116,7 @@ export default function PostPage() {
     <>
       <style>{`
         .letter {
+          opacity: 0;
           animation: fadeIn 1.5s ease forwards;
         }
 
