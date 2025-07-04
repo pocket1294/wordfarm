@@ -8,7 +8,6 @@ import {
   orderBy,
   onSnapshot,
   Timestamp,
-  //DocumentData,
   doc,
   updateDoc,
 } from "firebase/firestore";
@@ -32,11 +31,27 @@ function getFirebaseApp() {
 const app = getFirebaseApp();
 const db = getFirestore(app);
 
-// 投稿を新規追加
-export async function addPost(text: string) {
+export { db };
+
+// 投稿データ型
+export type Post = {
+  id: string;
+  text: string;
+  imageUrl?: string;
+};
+
+// 🔸 投稿を新規追加（画像付き対応）
+export async function addPost({
+  text,
+  imageUrl,
+}: {
+  text: string;
+  imageUrl?: string;
+}): Promise<void> {
   try {
     await addDoc(collection(db, "posts"), {
       text,
+      imageUrl: imageUrl || "",
       createdAt: Timestamp.now(),
     });
   } catch (error) {
@@ -44,24 +59,26 @@ export async function addPost(text: string) {
   }
 }
 
-// 投稿をリアルタイムで購読
-export function subscribePosts(
-  callback: (posts: { id: string; text: string }[]) => void
-) {
+// 🔸 投稿をリアルタイムで購読（画像あり対応）
+export function subscribePosts(callback: (posts: Post[]) => void) {
   const q = query(collection(db, "posts"), orderBy("createdAt", "asc"));
   return onSnapshot(q, (snapshot) => {
-    const posts: { id: string; text: string }[] = [];
+    const posts: Post[] = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
       if (typeof data.text === "string") {
-        posts.push({ id: doc.id, text: data.text });
+        posts.push({
+          id: doc.id,
+          text: data.text,
+          imageUrl: typeof data.imageUrl === "string" ? data.imageUrl : "",
+        });
       }
     });
     callback(posts);
   });
 }
 
-// 既存投稿の text フィールドを更新（追記用）
+// 🔸 既存投稿のテキストを更新（画像は更新しない）
 export async function updatePostText(id: string, newText: string) {
   try {
     const postRef = doc(db, "posts", id);

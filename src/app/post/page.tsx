@@ -1,16 +1,26 @@
+/*
+git add .
+git commit -m "update"
+git push
+*/
+
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { addPost, subscribePosts, updatePostText } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from "../../../firebaseConfig";
 
 type Post = {
   id: string;
   text: string;
+  imageUrl?: string;
 };
 
 export default function PostPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [inputText, setInputText] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [newlineEnabled, setNewlineEnabled] = useState(false);
   const [lastAnimatedPostId, setLastAnimatedPostId] = useState<string | null>(null);
   const [lastAnimatedStartIndex, setLastAnimatedStartIndex] = useState<number>(0);
@@ -30,7 +40,6 @@ export default function PostPage() {
 
   useEffect(() => {
     const unsubscribe = subscribePosts((newPosts) => {
-      //const el = postAreaRef.current;
       const wasAtBottom = isScrolledToBottom();
 
       const prevPost = posts[posts.length - 1];
@@ -65,10 +74,17 @@ export default function PostPage() {
   }, [posts]);
 
   async function submitPost() {
-    if (inputText.trim() === '') return;
+    if (inputText.trim() === '' && !imageFile) return;
+
+    let imageUrl = '';
+    if (imageFile) {
+      const imageRef = ref(storage, `images/${Date.now()}_${imageFile.name}`);
+      await uploadBytes(imageRef, imageFile);
+      imageUrl = await getDownloadURL(imageRef);
+    }
 
     if (newlineEnabled || posts.length === 0) {
-      await addPost(inputText);
+      await addPost({ text: inputText.trim(), imageUrl });
     } else {
       const lastPost = posts[posts.length - 1];
       const newText = lastPost.text + inputText;
@@ -76,10 +92,16 @@ export default function PostPage() {
     }
 
     setInputText('');
+    setImageFile(null);
   }
 
   function toggleNewline() {
     setNewlineEnabled((prev) => !prev);
+  }
+
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] || null;
+    setImageFile(file);
   }
 
   function renderPostText(post: Post) {
@@ -87,23 +109,39 @@ export default function PostPage() {
     const animateFrom = isAnimated ? lastAnimatedStartIndex : post.text.length;
     let globalIndex = 0;
 
-    return post.text.split('\n').map((line, lineIndex) => (
-      <div key={lineIndex} style={{ lineHeight: '1.5', margin: 0 }}>
-        {[...line].map((char, i) => {
-          const animate = globalIndex >= animateFrom;
-          const style = animate
-            ? { animationDelay: `${(globalIndex - animateFrom) * 0.05}s`, opacity: 0 }
-            : { opacity: 1 };
-          const className = animate ? 'letter' : '';
-          globalIndex++;
-          return (
-            <span key={`${lineIndex}-${i}`} className={className} style={style}>
-              {char}
-            </span>
-          );
-        })}
-      </div>
-    ));
+    return (
+      <>
+        {post.text.split('\n').map((line, lineIndex) => (
+          <div key={lineIndex} style={{ lineHeight: '1.5', margin: 0 }}>
+            {[...line].map((char, i) => {
+              const animate = globalIndex >= animateFrom;
+              const style = animate
+                ? { animationDelay: `${(globalIndex - animateFrom) * 0.05}s`, opacity: 0 }
+                : { opacity: 1 };
+              const className = animate ? 'letter' : '';
+              globalIndex++;
+              return (
+                <span key={`${lineIndex}-${i}`} className={className} style={style}>
+                  {char}
+                </span>
+              );
+            })}
+          </div>
+        ))}
+        {post.imageUrl && (
+          <>
+            <br />
+            <div className="flex justify-center my-3">
+              <img
+                src={post.imageUrl}
+                alt="投稿画像"
+                className="w-full max-w-md h-auto rounded-xl shadow-md"
+              />
+            </div>
+          </>
+        )}
+      </>
+    );
   }
 
   return (
@@ -159,10 +197,11 @@ export default function PostPage() {
           id="formContainer"
           style={{
             display: 'flex',
+            flexDirection: 'column',
             padding: 8,
             borderTop: '1px solid #ccc',
             background: '#fafafa',
-            alignItems: 'center',
+            gap: 8,
           }}
         >
           <textarea
@@ -170,7 +209,6 @@ export default function PostPage() {
             rows={1}
             placeholder="write your words."
             style={{
-              flex: 1,
               fontSize: 16,
               padding: '6px 8px',
               lineHeight: 1.5,
@@ -194,47 +232,42 @@ export default function PostPage() {
               }
             }}
           />
-          <button
-            onClick={toggleNewline}
-            style={{
-              fontSize: 20,
-              backgroundColor: newlineEnabled ? '#3399ff' : '#ddd',
-              color: newlineEnabled ? 'white' : '#333',
-              width: 38,
-              textAlign: 'center',
-              marginLeft: 0,
-              border: 'none',
-              cursor: 'pointer',
-              borderRadius: 4,
-              height: 38,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              lineHeight: 'normal',
-            }}
-          >
-            ↵
-          </button>
-          <button
-            onClick={submitPost}
-            style={{
-              backgroundColor: '#4CAF50',
-              color: 'white',
-              fontSize: 14,
-              marginLeft: 8,
-              padding: '0 14px',
-              border: 'none',
-              cursor: 'pointer',
-              borderRadius: 4,
-              height: 38,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              lineHeight: 'normal',
-            }}
-          >
-            post
-          </button>
+
+          <input type="file" accept="image/*" onChange={handleImageChange} />
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={toggleNewline}
+              style={{
+                fontSize: 20,
+                backgroundColor: newlineEnabled ? '#3399ff' : '#ddd',
+                color: newlineEnabled ? 'white' : '#333',
+                width: 38,
+                textAlign: 'center',
+                border: 'none',
+                cursor: 'pointer',
+                borderRadius: 4,
+                height: 38,
+              }}
+            >
+              ↵
+            </button>
+            <button
+              onClick={submitPost}
+              style={{
+                backgroundColor: '#4CAF50',
+                color: 'white',
+                fontSize: 14,
+                padding: '0 14px',
+                border: 'none',
+                cursor: 'pointer',
+                borderRadius: 4,
+                height: 38,
+              }}
+            >
+              post
+            </button>
+          </div>
         </div>
       </div>
     </>
