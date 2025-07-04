@@ -39,18 +39,18 @@ export type Post = {
   imageUrl?: string;
 };
 
-// 🔸 投稿を新規追加（画像付き対応）
+// 投稿を新規追加（画像対応）
 export async function addPost({
   text,
-  imageUrl,
+  imageUrl = ''
 }: {
   text: string;
   imageUrl?: string;
-}): Promise<void> {
+}) {
   try {
     await addDoc(collection(db, "posts"), {
       text,
-      imageUrl: imageUrl || '',
+      imageUrl,
       createdAt: Timestamp.now(),
     });
   } catch (error) {
@@ -58,18 +58,20 @@ export async function addPost({
   }
 }
 
-// 🔸 投稿をリアルタイムで購読（画像あり対応）
-export function subscribePosts(callback: (posts: Post[]) => void) {
+// 投稿をリアルタイムで購読（画像対応）
+export function subscribePosts(
+  callback: (posts: { id: string; text: string; imageUrl?: string }[]) => void
+) {
   const q = query(collection(db, "posts"), orderBy("createdAt", "asc"));
   return onSnapshot(q, (snapshot) => {
-    const posts: Post[] = [];
+    const posts: { id: string; text: string; imageUrl?: string }[] = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
       if (typeof data.text === "string") {
         posts.push({
           id: doc.id,
           text: data.text,
-          imageUrl: typeof data.imageUrl === "string" ? data.imageUrl : "",
+          imageUrl: data.imageUrl || ''
         });
       }
     });
@@ -77,7 +79,7 @@ export function subscribePosts(callback: (posts: Post[]) => void) {
   });
 }
 
-// 🔸 既存投稿の text フィールドを更新（追記用）
+// 投稿内容を更新
 export async function updatePostText(id: string, newText: string) {
   try {
     const postRef = doc(db, "posts", id);
