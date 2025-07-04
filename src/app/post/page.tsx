@@ -78,9 +78,15 @@ export default function PostPage() {
 
     let imageUrl = '';
     if (imageFile) {
-      const imageRef = ref(storage, `images/${Date.now()}_${imageFile.name}`);
-      await uploadBytes(imageRef, imageFile);
-      imageUrl = await getDownloadURL(imageRef);
+      try {
+        const imageRef = ref(storage, `images/${Date.now()}_${imageFile.name}`);
+        await uploadBytes(imageRef, imageFile);
+        imageUrl = await getDownloadURL(imageRef);
+        console.log("✅ 画像アップロード成功:", imageUrl);
+      } catch (error) {
+        console.error("❌ 画像アップロード失敗:", error);
+        return;
+      }
     }
 
     if (newlineEnabled || posts.length === 0) {

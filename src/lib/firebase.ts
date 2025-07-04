@@ -33,7 +33,6 @@ const db = getFirestore(app);
 
 export { db };
 
-// 投稿データ型
 export type Post = {
   id: string;
   text: string;
@@ -51,7 +50,7 @@ export async function addPost({
   try {
     await addDoc(collection(db, "posts"), {
       text,
-      imageUrl: imageUrl || "",
+      imageUrl: imageUrl || '',
       createdAt: Timestamp.now(),
     });
   } catch (error) {
@@ -78,7 +77,7 @@ export function subscribePosts(callback: (posts: Post[]) => void) {
   });
 }
 
-// 🔸 既存投稿のテキストを更新（画像は更新しない）
+// 🔸 既存投稿の text フィールドを更新（追記用）
 export async function updatePostText(id: string, newText: string) {
   try {
     const postRef = doc(db, "posts", id);
