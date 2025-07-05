@@ -1,9 +1,3 @@
-/*
-git add .
-git commit -m "fix realtime update and image post bug"
-git push
-*/
-
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -23,7 +17,6 @@ export default function PostPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [lastAnimatedPostId, setLastAnimatedPostId] = useState<string | null>(null);
   const [lastAnimatedStartIndex, setLastAnimatedStartIndex] = useState<number>(0);
-
   const postsRef = useRef<Post[]>([]);
 
   useEffect(() => {
@@ -48,7 +41,9 @@ export default function PostPage() {
     return () => unsubscribe();
   }, []);
 
-  async function submitPost() {
+  async function submitPost(e?: React.FormEvent) {
+    if (e) e.preventDefault();
+
     const hasText = inputText.trim() !== '';
     const hasImage = !!imageFile;
     if (!hasText && !hasImage) return;
@@ -65,13 +60,10 @@ export default function PostPage() {
       }
     }
 
-    const newPostText = inputText.trim();
-    await addPost({ text: newPostText, imageUrl });
+    await addPost({ text: inputText.trim(), imageUrl });
 
     setInputText('');
     setImageFile(null);
-
-    // reset file input manually (in case same file selected again)
     const input = document.getElementById('imageInput') as HTMLInputElement;
     if (input) input.value = '';
   }
@@ -88,7 +80,7 @@ export default function PostPage() {
 
     return (
       <>
-        {post.text && post.text.trim() !== '' && post.text.split('\n').map((line, lineIndex) => (
+        {post.text?.trim() && post.text.split('\n').map((line, lineIndex) => (
           <div key={lineIndex} style={{ lineHeight: '1.5', margin: 0 }}>
             {[...line].map((char, i) => {
               const animate = globalIndex >= animateFrom;
@@ -105,7 +97,6 @@ export default function PostPage() {
             })}
           </div>
         ))}
-
         {post.imageUrl && (
           <div className="flex justify-center my-3">
             <img
@@ -165,69 +156,65 @@ export default function PostPage() {
           ))}
         </div>
 
-        <div
-          id="formContainer"
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            padding: 8,
-            borderTop: '1px solid #ccc',
-            background: '#fafafa',
-            gap: 8,
-          }}
-        >
-          <div style={{ display: 'flex', gap: 8 }}>
-            <textarea
-              id="messageInput"
-              rows={1}
-              placeholder="write your words."
-              style={{
-                flex: 1,
-                fontSize: 16,
-                padding: '6px 8px',
-                lineHeight: 1.5,
-                resize: 'none',
-                border: '1px solid #ccc',
-                borderRadius: 4,
-                boxSizing: 'border-box',
-                minHeight: 38,
-                maxWidth: '100%',
-                color: '#000'
-              }}
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
-                  e.preventDefault();
-                  submitPost();
-                }
-              }}
-            />
-            <button
-              onClick={submitPost}
-              style={{
-                backgroundColor: '#4CAF50',
-                color: 'white',
-                fontSize: 14,
-                padding: '0 16px',
-                border: 'none',
-                cursor: 'pointer',
-                borderRadius: 4,
-                height: 38,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              post
-            </button>
-          </div>
+        <form onSubmit={submitPost}>
+          <div
+            id="formContainer"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              padding: 8,
+              borderTop: '1px solid #ccc',
+              background: '#fafafa',
+              gap: 8,
+            }}
+          >
+            <div style={{ display: 'flex', gap: 8 }}>
+              <textarea
+                id="messageInput"
+                rows={1}
+                placeholder="write your words."
+                style={{
+                  flex: 1,
+                  fontSize: 16,
+                  padding: '6px 8px',
+                  lineHeight: 1.5,
+                  resize: 'none',
+                  border: '1px solid #ccc',
+                  borderRadius: 4,
+                  boxSizing: 'border-box',
+                  minHeight: 38,
+                  maxWidth: '100%',
+                  color: '#000'
+                }}
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+              />
+              <button
+                type="submit"
+                style={{
+                  backgroundColor: '#4CAF50',
+                  color: 'white',
+                  fontSize: 14,
+                  padding: '0 16px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  borderRadius: 4,
+                  height: 38,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                post
+              </button>
+            </div>
 
-          <input
-            id="imageInput"
-            type="file"
-            accept="image/*"
-            onChange={handleImageChange}
-          />
-        </div>
+            <input
+              id="imageInput"
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+            />
+          </div>
+        </form>
       </div>
     </>
   );
