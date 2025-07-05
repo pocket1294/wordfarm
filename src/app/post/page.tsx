@@ -21,7 +21,6 @@ export default function PostPage() {
   const [lastAnimatedStartIndex, setLastAnimatedStartIndex] = useState<number>(0);
   const postsRef = useRef<Post[]>([]);
 
-  // 🔐 匿名ログイン処理
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (!user) {
@@ -36,7 +35,6 @@ export default function PostPage() {
     return () => unsubscribeAuth();
   }, []);
 
-  // 投稿購読
   useEffect(() => {
     const unsubscribe = subscribePosts((newPosts) => {
       const prevPost = postsRef.current[postsRef.current.length - 1];
@@ -59,7 +57,6 @@ export default function PostPage() {
     return () => unsubscribe();
   }, []);
 
-  // 投稿処理
   async function submitPost(e?: React.FormEvent) {
     if (e) e.preventDefault();
 
@@ -70,12 +67,8 @@ export default function PostPage() {
     let imageUrl = '';
     if (hasImage && imageFile) {
       try {
-        const fileClone = new File([imageFile.slice()], imageFile.name, {
-          type: imageFile.type,
-          lastModified: imageFile.lastModified,
-        });
-        const imageRef = ref(storage, `images/${Date.now()}_${fileClone.name}`);
-        await uploadBytes(imageRef, fileClone);
+        const imageRef = ref(storage, `images/${Date.now()}_${imageFile.name}`);
+        await uploadBytes(imageRef, imageFile);
         imageUrl = await getDownloadURL(imageRef);
       } catch (error) {
         console.error('❌ 画像アップロード失敗:', error);
@@ -93,7 +86,11 @@ export default function PostPage() {
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] || null;
     if (file && file.size > 0) {
-      setImageFile(file);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImageFile(file);
+      };
+      reader.readAsArrayBuffer(file);
     } else {
       setImageFile(null);
     }
