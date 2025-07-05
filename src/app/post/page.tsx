@@ -1,6 +1,12 @@
+/*
+git add .
+git commit -m "fix realtime update and image post bug"
+git push
+*/
+
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { addPost, subscribePosts } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../../firebaseConfig';
@@ -18,13 +24,15 @@ export default function PostPage() {
   const [lastAnimatedPostId, setLastAnimatedPostId] = useState<string | null>(null);
   const [lastAnimatedStartIndex, setLastAnimatedStartIndex] = useState<number>(0);
 
-  // ✅ useEffectの依存配列を [] に変更
+  const postsRef = useRef<Post[]>([]);
+
   useEffect(() => {
     const unsubscribe = subscribePosts((newPosts) => {
-      const prevPost = posts[posts.length - 1];
+      const prevPost = postsRef.current[postsRef.current.length - 1];
       const newPost = newPosts[newPosts.length - 1];
 
       setPosts(newPosts);
+      postsRef.current = newPosts;
 
       if (newPost) {
         if (!prevPost || prevPost.id !== newPost.id) {
@@ -38,7 +46,7 @@ export default function PostPage() {
     });
 
     return () => unsubscribe();
-  }, []); // ← ここが重要！
+  }, []);
 
   async function submitPost() {
     const hasText = inputText.trim() !== '';
@@ -57,9 +65,15 @@ export default function PostPage() {
       }
     }
 
-    await addPost({ text: inputText.trim(), imageUrl });
+    const newPostText = inputText.trim();
+    await addPost({ text: newPostText, imageUrl });
+
     setInputText('');
     setImageFile(null);
+
+    // reset file input manually (in case same file selected again)
+    const input = document.getElementById('imageInput') as HTMLInputElement;
+    if (input) input.value = '';
   }
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -78,11 +92,15 @@ export default function PostPage() {
           <div key={lineIndex} style={{ lineHeight: '1.5', margin: 0 }}>
             {[...line].map((char, i) => {
               const animate = globalIndex >= animateFrom;
-              const style = animate ? { animationDelay: `${(globalIndex - animateFrom) * 0.05}s`, opacity: 0 } : { opacity: 1 };
+              const style = animate
+                ? { animationDelay: `${(globalIndex - animateFrom) * 0.05}s`, opacity: 0 }
+                : { opacity: 1 };
               const className = animate ? 'letter' : '';
               globalIndex++;
               return (
-                <span key={`${lineIndex}-${i}`} className={className} style={style}>{char}</span>
+                <span key={`${lineIndex}-${i}`} className={className} style={style}>
+                  {char}
+                </span>
               );
             })}
           </div>
@@ -114,11 +132,32 @@ export default function PostPage() {
       `}</style>
 
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <header style={{ padding: '12px 0', textAlign: 'center', fontWeight: 'bold', fontSize: '1.8rem', backgroundColor: '#fafafa', borderBottom: '1px solid #ccc', userSelect: 'none', color: '#000' }}>
+        <header style={{
+          padding: '12px 0',
+          textAlign: 'center',
+          fontWeight: 'bold',
+          fontSize: '1.8rem',
+          backgroundColor: '#fafafa',
+          borderBottom: '1px solid #ccc',
+          userSelect: 'none',
+          color: '#000'
+        }}>
           Word Farm
         </header>
 
-        <div id="postArea" style={{ flex: 1, padding: 16, overflowY: 'auto', whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'break-word', background: '#fff', color: '#000' }}>
+        <div
+          id="postArea"
+          style={{
+            flex: 1,
+            padding: 16,
+            overflowY: 'auto',
+            whiteSpace: 'pre-wrap',
+            overflowWrap: 'break-word',
+            wordBreak: 'break-word',
+            background: '#fff',
+            color: '#000',
+          }}
+        >
           {posts.map((post) => (
             <div key={post.id} style={{ margin: '8px 0' }}>
               {renderPostText(post)}
@@ -126,13 +165,35 @@ export default function PostPage() {
           ))}
         </div>
 
-        <div id="formContainer" style={{ display: 'flex', flexDirection: 'column', padding: 8, borderTop: '1px solid #ccc', background: '#fafafa', gap: 8 }}>
+        <div
+          id="formContainer"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            padding: 8,
+            borderTop: '1px solid #ccc',
+            background: '#fafafa',
+            gap: 8,
+          }}
+        >
           <div style={{ display: 'flex', gap: 8 }}>
             <textarea
               id="messageInput"
               rows={1}
               placeholder="write your words."
-              style={{ flex: 1, fontSize: 16, padding: '6px 8px', lineHeight: 1.5, resize: 'none', border: '1px solid #ccc', borderRadius: 4, boxSizing: 'border-box', minHeight: 38, maxWidth: '100%', color: '#000' }}
+              style={{
+                flex: 1,
+                fontSize: 16,
+                padding: '6px 8px',
+                lineHeight: 1.5,
+                resize: 'none',
+                border: '1px solid #ccc',
+                borderRadius: 4,
+                boxSizing: 'border-box',
+                minHeight: 38,
+                maxWidth: '100%',
+                color: '#000'
+              }}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={(e) => {
@@ -144,13 +205,28 @@ export default function PostPage() {
             />
             <button
               onClick={submitPost}
-              style={{ backgroundColor: '#4CAF50', color: 'white', fontSize: 14, padding: '0 16px', border: 'none', cursor: 'pointer', borderRadius: 4, height: 38, whiteSpace: 'nowrap' }}
+              style={{
+                backgroundColor: '#4CAF50',
+                color: 'white',
+                fontSize: 14,
+                padding: '0 16px',
+                border: 'none',
+                cursor: 'pointer',
+                borderRadius: 4,
+                height: 38,
+                whiteSpace: 'nowrap',
+              }}
             >
               post
             </button>
           </div>
 
-          <input type="file" accept="image/*" onChange={handleImageChange} />
+          <input
+            id="imageInput"
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+          />
         </div>
       </div>
     </>
