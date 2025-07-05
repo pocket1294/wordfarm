@@ -74,11 +74,17 @@ export default function PostPage() {
   }, [posts]);
 
   async function submitPost() {
-    if (inputText.trim() === '' && !imageFile) return;
+    const hasText = inputText.trim() !== '';
+    const hasImage = !!imageFile;
+
+    // どちらも空なら投稿しない
+    if (!hasText && !hasImage) return;
 
     let imageUrl = '';
-    if (imageFile) {
+
+    if (hasImage && imageFile) {
       try {
+        console.log("📁 画像ファイル準備OK:", imageFile);
         const imageRef = ref(storage, `images/${Date.now()}_${imageFile.name}`);
         await uploadBytes(imageRef, imageFile);
         imageUrl = await getDownloadURL(imageRef);
@@ -89,12 +95,14 @@ export default function PostPage() {
       }
     }
 
-    // 🔽 投稿条件を強化（imageUrlが空でもちゃんとaddPostを呼ぶ）
+    const trimmedText = inputText.trim();
+
     if (newlineEnabled || posts.length === 0) {
-      await addPost({ text: inputText.trim(), imageUrl });
-    } else {
+      await addPost({ text: trimmedText, imageUrl });  // 🔽 ←これが重要
+      console.log("📝 投稿内容:", { text: trimmedText, imageUrl });
+    } else if (hasText) {
       const lastPost = posts[posts.length - 1];
-      const newText = lastPost.text + inputText;
+      const newText = lastPost.text + trimmedText;
       await updatePostText(lastPost.id, newText);
     }
 
@@ -114,12 +122,13 @@ export default function PostPage() {
 
   function renderPostText(post: Post) {
     const isAnimated = post.id === lastAnimatedPostId;
-    const animateFrom = isAnimated ? lastAnimatedStartIndex : post.text.length;
+    const animateFrom = isAnimated ? lastAnimatedStartIndex : post.text?.length ?? 0;
     let globalIndex = 0;
 
     return (
       <>
-        {post.text.split('\n').map((line, lineIndex) => (
+        {/* テキストがある場合のみ表示 */}
+        {post.text && post.text.trim() !== '' && post.text.split('\n').map((line, lineIndex) => (
           <div key={lineIndex} style={{ lineHeight: '1.5', margin: 0 }}>
             {[...line].map((char, i) => {
               const animate = globalIndex >= animateFrom;
@@ -136,21 +145,21 @@ export default function PostPage() {
             })}
           </div>
         ))}
+
+        {/* 画像がある場合表示 */}
         {post.imageUrl && (
-          <>
-            <br />
-            <div className="flex justify-center my-3">
-              <img
-                src={post.imageUrl}
-                alt="投稿画像"
-                className="w-full max-w-md h-auto rounded-xl shadow-md"
-              />
-            </div>
-          </>
+          <div className="flex justify-center my-3">
+            <img
+              src={post.imageUrl}
+              alt="投稿画像"
+              className="w-full max-w-md h-auto rounded-xl shadow-md"
+            />
+          </div>
         )}
       </>
     );
   }
+
 
   return (
     <>
