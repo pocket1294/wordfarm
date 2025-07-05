@@ -16,10 +16,10 @@ export default function PostPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [inputText, setInputText] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageInputKey, setImageInputKey] = useState<number>(Date.now());
   const [lastAnimatedPostId, setLastAnimatedPostId] = useState<string | null>(null);
   const [lastAnimatedStartIndex, setLastAnimatedStartIndex] = useState<number>(0);
   const postsRef = useRef<Post[]>([]);
-  const imageInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
@@ -90,15 +90,20 @@ export default function PostPage() {
 
     setInputText('');
     setImageFile(null);
-    if (imageInputRef.current) {
-      imageInputRef.current.value = '';
-    }
+    setImageInputKey(Date.now());
   }
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] || null;
     if (file && file.size > 0) {
-      setImageFile(file);
+      const reader = new FileReader();
+      reader.onload = () => {
+        const arrayBuffer = reader.result as ArrayBuffer;
+        const blobCopy = new Blob([arrayBuffer], { type: file.type });
+        const safeFile = new File([blobCopy], file.name, { type: file.type });
+        setImageFile(safeFile);
+      };
+      reader.readAsArrayBuffer(file);
     } else {
       setImageFile(null);
     }
@@ -239,11 +244,14 @@ export default function PostPage() {
             </div>
 
             <input
-              ref={imageInputRef}
+              key={imageInputKey}
               id="imageInput"
               type="file"
               accept="image/*"
-              onChange={handleImageChange}
+              onChange={(e) => {
+                handleImageChange(e);
+                setImageInputKey(Date.now()); // 👈 inputの再生成
+              }}
             />
           </div>
         </form>
