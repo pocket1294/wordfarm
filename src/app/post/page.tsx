@@ -16,8 +16,7 @@ export default function PostPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [inputText, setInputText] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [imageInputKey, setImageInputKey] = useState<number>(Date.now());
+  const [fileName, setFileName] = useState<string | null>(null);
   const [lastAnimatedPostId, setLastAnimatedPostId] = useState<string | null>(null);
   const [lastAnimatedStartIndex, setLastAnimatedStartIndex] = useState<number>(0);
   const postsRef = useRef<Post[]>([]);
@@ -91,15 +90,17 @@ export default function PostPage() {
 
     setInputText('');
     setImageFile(null);
-    setImageInputKey(Date.now());
+    setFileName(null);
   }
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] || null;
     if (file && file.size > 0) {
       setImageFile(file);
+      setFileName(file.name);
     } else {
       setImageFile(null);
+      setFileName(null);
     }
   }
 
@@ -243,6 +244,11 @@ export default function PostPage() {
               accept="image/*"
               onChange={handleImageChange}
             />
+            {fileName && (
+              <p style={{ fontSize: 12, color: '#555', margin: '4px 0 0 0' }}>
+                選択されたファイル: {fileName}
+              </p>
+            )}
           </div>
         </form>
       </div>
