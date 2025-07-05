@@ -131,7 +131,7 @@ export default function PostPage() {
             <img
               src={post.imageUrl}
               alt="投稿画像"
-              className="w-full max-w-xs h-auto rounded-xl shadow-md"
+              className="w-full max-w-[170px] h-auto rounded-xl shadow-md"
             />
           </div>
         )}
