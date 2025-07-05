@@ -15,6 +15,7 @@ export default function PostPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [inputText, setInputText] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageInputKey, setImageInputKey] = useState<number>(Date.now());
   const [lastAnimatedPostId, setLastAnimatedPostId] = useState<string | null>(null);
   const [lastAnimatedStartIndex, setLastAnimatedStartIndex] = useState<number>(0);
   const postsRef = useRef<Post[]>([]);
@@ -64,8 +65,16 @@ export default function PostPage() {
 
     setInputText('');
     setImageFile(null);
-    const input = document.getElementById('imageInput') as HTMLInputElement;
-    if (input) input.value = '';
+    setImageInputKey(Date.now());
+  }
+
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] || null;
+    if (file && file.size > 0) {
+      setImageFile(file);
+    } else {
+      setImageFile(null);
+    }
   }
 
   function renderPostText(post: Post) {
@@ -203,22 +212,14 @@ export default function PostPage() {
             </div>
 
             <input
+              key={imageInputKey}
               id="imageInput"
               type="file"
               accept="image/*"
               onClick={(e) => {
-                // 同じファイルでもonChangeが動くように
                 (e.target as HTMLInputElement).value = '';
               }}
-              onChange={(e) => {
-                const file = e.target.files?.[0] || null;
-                if (file && file.size > 0) {
-                  setImageFile(file);
-                } else {
-                  setImageFile(null);
-                  console.warn('❌ 無効なファイル');
-                }
-              }}
+              onChange={handleImageChange}
             />
           </div>
         </form>
