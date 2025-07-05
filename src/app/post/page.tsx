@@ -50,7 +50,13 @@ export default function PostPage() {
 
     let imageUrl = '';
     if (hasImage && imageFile) {
+      if (!imageFile.size || imageFile.size === 0) {
+        console.error('❌ 無効な画像ファイルです');
+        return;
+      }
+
       try {
+        await new Promise((res) => setTimeout(res, 100)); // スマホ対策：少し遅延
         const imageRef = ref(storage, `images/${Date.now()}_${imageFile.name}`);
         await uploadBytes(imageRef, imageFile);
         imageUrl = await getDownloadURL(imageRef);
@@ -64,6 +70,7 @@ export default function PostPage() {
 
     setInputText('');
     setImageFile(null);
+
     const input = document.getElementById('imageInput') as HTMLInputElement;
     if (input) input.value = '';
   }
@@ -212,6 +219,10 @@ export default function PostPage() {
               type="file"
               accept="image/*"
               onChange={handleImageChange}
+              onClick={(e) => {
+                // 同じファイル選択時にもイベントを発火させる
+                (e.target as HTMLInputElement).value = '';
+              }}
             />
           </div>
         </form>
