@@ -1,4 +1,4 @@
-/*
+""/*
 git add .
 git commit -m "update"
 git push
@@ -131,7 +131,7 @@ export default function PostPage() {
             <img
               src={post.imageUrl}
               alt="投稿画像"
-              className="w-full max-w-md h-auto rounded-xl shadow-md"
+              className="w-full max-w-xs h-auto rounded-xl shadow-md"
             />
           </div>
         )}
@@ -165,29 +165,30 @@ export default function PostPage() {
         </div>
 
         <div id="formContainer" style={{ display: 'flex', flexDirection: 'column', padding: 8, borderTop: '1px solid #ccc', background: '#fafafa', gap: 8 }}>
-          <textarea
-            id="messageInput"
-            rows={1}
-            placeholder="write your words."
-            style={{ fontSize: 16, padding: '6px 8px', lineHeight: 1.5, resize: 'none', border: '1px solid #ccc', borderRadius: 4, boxSizing: 'border-box', minHeight: 38, height: 38, color: '#000' }}
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
-                e.preventDefault();
-                submitPost();
-              }
-            }}
-          />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <textarea
+              id="messageInput"
+              rows={1}
+              placeholder="write your words."
+              style={{ flex: 1, fontSize: 16, padding: '6px 8px', lineHeight: 1.5, resize: 'none', border: '1px solid #ccc', borderRadius: 4, boxSizing: 'border-box', minHeight: 38, maxWidth: '100%', color: '#000' }}
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
+                  e.preventDefault();
+                  submitPost();
+                }
+              }}
+            />
+            <button
+              onClick={submitPost}
+              style={{ backgroundColor: '#4CAF50', color: 'white', fontSize: 14, padding: '0 16px', border: 'none', cursor: 'pointer', borderRadius: 4, height: 38, whiteSpace: 'nowrap' }}
+            >
+              post
+            </button>
+          </div>
 
           <input type="file" accept="image/*" onChange={handleImageChange} />
-
-          <button
-            onClick={submitPost}
-            style={{ backgroundColor: '#4CAF50', color: 'white', fontSize: 14, padding: '0 14px', border: 'none', cursor: 'pointer', borderRadius: 4, height: 38 }}
-          >
-            post
-          </button>
         </div>
       </div>
     </>
