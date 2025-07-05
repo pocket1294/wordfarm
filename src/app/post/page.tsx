@@ -1,12 +1,6 @@
-/*
-git add .
-git commit -m "fix image upload issues on mobile and separate each post"
-git push
-*/
-
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { addPost, subscribePosts } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../../firebaseConfig';
@@ -23,8 +17,8 @@ export default function PostPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [lastAnimatedPostId, setLastAnimatedPostId] = useState<string | null>(null);
   const [lastAnimatedStartIndex, setLastAnimatedStartIndex] = useState<number>(0);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // ✅ useEffectの依存配列を [] に変更
   useEffect(() => {
     const unsubscribe = subscribePosts((newPosts) => {
       const prevPost = posts[posts.length - 1];
@@ -44,7 +38,7 @@ export default function PostPage() {
     });
 
     return () => unsubscribe();
-  }, [posts]);
+  }, []); // ← ここが重要！
 
   async function submitPost() {
     const hasText = inputText.trim() !== '';
@@ -53,16 +47,10 @@ export default function PostPage() {
 
     let imageUrl = '';
     if (hasImage && imageFile) {
-      if (imageFile.size === 0) {
-        console.error('⚠️ 空の画像ファイルです。');
-        return;
-      }
-
       try {
         const imageRef = ref(storage, `images/${Date.now()}_${imageFile.name}`);
         await uploadBytes(imageRef, imageFile);
         imageUrl = await getDownloadURL(imageRef);
-        console.log('✅ 画像アップロード成功:', imageUrl);
       } catch (error) {
         console.error('❌ 画像アップロード失敗:', error);
         return;
@@ -70,10 +58,8 @@ export default function PostPage() {
     }
 
     await addPost({ text: inputText.trim(), imageUrl });
-
     setInputText('');
     setImageFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -164,12 +150,7 @@ export default function PostPage() {
             </button>
           </div>
 
-          <input
-            type="file"
-            accept="image/*"
-            ref={fileInputRef}
-            onChange={handleImageChange}
-          />
+          <input type="file" accept="image/*" onChange={handleImageChange} />
         </div>
       </div>
     </>
