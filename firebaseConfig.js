@@ -1,6 +1,7 @@
 // firebaseConfig.js
 import { initializeApp, getApps } from "firebase/app";
 import { getStorage } from "firebase/storage";
+import { getAuth } from "firebase/auth"; // 追加
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -15,7 +16,8 @@ const firebaseConfig = {
 // Firebaseがすでに初期化されているかチェックし、初期化されてなければ初期化する
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
 
-// Firebase Storage の初期化
+// Firebase Storage と Auth の初期化
 const storage = getStorage(app);
+const auth = getAuth(app); // 追加
 
-export { app, storage };
+export { app, storage, auth }; // auth をエクスポート

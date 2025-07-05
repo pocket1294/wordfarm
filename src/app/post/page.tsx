@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { addPost, subscribePosts } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '../../../firebaseConfig';
+import { storage, auth } from '../../../firebaseConfig';
+import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 
 type Post = {
   id: string;
@@ -20,6 +21,22 @@ export default function PostPage() {
   const [lastAnimatedStartIndex, setLastAnimatedStartIndex] = useState<number>(0);
   const postsRef = useRef<Post[]>([]);
 
+  // 🔐 匿名ログイン処理
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        signInAnonymously(auth)
+          .then(() => console.log('🔐 匿名ログイン完了'))
+          .catch((err) => console.error('❌ 匿名ログイン失敗:', err));
+      } else {
+        console.log('✅ ログイン中 UID:', user.uid);
+      }
+    });
+
+    return () => unsubscribeAuth();
+  }, []);
+
+  // 投稿購読
   useEffect(() => {
     const unsubscribe = subscribePosts((newPosts) => {
       const prevPost = postsRef.current[postsRef.current.length - 1];
@@ -42,6 +59,7 @@ export default function PostPage() {
     return () => unsubscribe();
   }, []);
 
+  // 投稿処理
   async function submitPost(e?: React.FormEvent) {
     if (e) e.preventDefault();
 
