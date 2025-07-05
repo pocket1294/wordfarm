@@ -1,4 +1,4 @@
-""/*
+/*
 git add .
 git commit -m "update"
 git push
@@ -156,7 +156,7 @@ export default function PostPage() {
           Word Farm
         </header>
 
-        <div id="postArea" ref={postAreaRef} style={{ flex: 1, padding: 16, overflowY: 'auto', whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'break-word', background: '#fff', color: '#000' }}>
+        <div id="postArea" ref={postAreaRef} style={{ flex: 1, padding: 16, overflowY: 'auto', scrollBehavior: 'smooth', whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'break-word', background: '#fff', color: '#000' }}>
           {posts.map((post) => (
             <div key={post.id} style={{ margin: '8px 0' }}>
               {renderPostText(post)}
