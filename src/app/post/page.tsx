@@ -96,14 +96,7 @@ export default function PostPage() {
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] || null;
     if (file && file.size > 0) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const arrayBuffer = reader.result as ArrayBuffer;
-        const blobCopy = new Blob([arrayBuffer], { type: file.type });
-        const safeFile = new File([blobCopy], file.name, { type: file.type });
-        setImageFile(safeFile);
-      };
-      reader.readAsArrayBuffer(file);
+      setImageFile(file);
     } else {
       setImageFile(null);
     }
@@ -244,14 +237,10 @@ export default function PostPage() {
             </div>
 
             <input
-              key={imageInputKey}
               id="imageInput"
               type="file"
               accept="image/*"
-              onChange={(e) => {
-                handleImageChange(e);
-                setImageInputKey(Date.now()); // 👈 inputの再生成
-              }}
+              onChange={handleImageChange}
             />
           </div>
         </form>
