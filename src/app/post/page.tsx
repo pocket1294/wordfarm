@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { addPost, subscribePosts } from '@/lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../../../firebaseConfig';
 import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 
@@ -68,8 +68,18 @@ export default function PostPage() {
     if (hasImage && imageFile) {
       try {
         const imageRef = ref(storage, `images/${Date.now()}_${imageFile.name}`);
-        await uploadBytes(imageRef, imageFile);
-        imageUrl = await getDownloadURL(imageRef);
+        const uploadTask = uploadBytesResumable(imageRef, imageFile);
+
+        await new Promise((resolve, reject) => {
+          uploadTask.on(
+            'state_changed',
+            null,
+            (error) => reject(error),
+            () => resolve(null)
+          );
+        });
+
+        imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
       } catch (error) {
         console.error('❌ 画像アップロード失敗:', error);
         return;
@@ -86,11 +96,7 @@ export default function PostPage() {
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] || null;
     if (file && file.size > 0) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setImageFile(file);
-      };
-      reader.readAsArrayBuffer(file);
+      setImageFile(file);
     } else {
       setImageFile(null);
     }
