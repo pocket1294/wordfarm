@@ -80,21 +80,16 @@ export default function PostPage() {
     if (imageFile) {
       try {
         const imageRef = ref(storage, `images/${Date.now()}_${imageFile.name}`);
-        console.log("📁 画像ファイル準備OK:", imageFile);
-
         await uploadBytes(imageRef, imageFile);
-        console.log("✅ 画像アップロード成功");
-
         imageUrl = await getDownloadURL(imageRef);
-        console.log("🌐 ダウンロードURL:", imageUrl);
+        console.log("✅ 画像アップロード成功:", imageUrl);
       } catch (error) {
         console.error("❌ 画像アップロード失敗:", error);
         return;
       }
     }
 
-    console.log("📝 投稿内容:", { inputText, imageUrl });
-
+    // 🔽 投稿条件を強化（imageUrlが空でもちゃんとaddPostを呼ぶ）
     if (newlineEnabled || posts.length === 0) {
       await addPost({ text: inputText.trim(), imageUrl });
     } else {
