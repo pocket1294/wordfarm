@@ -7,9 +7,9 @@ git push
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { addPost, subscribePosts, updatePostText } from '@/lib/firebase';
+import { addPost, subscribePosts } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from "../../../firebaseConfig";
+import { storage } from '../../../firebaseConfig';
 
 type Post = {
   id: string;
@@ -21,7 +21,6 @@ export default function PostPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [inputText, setInputText] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [newlineEnabled, setNewlineEnabled] = useState(false);
   const [lastAnimatedPostId, setLastAnimatedPostId] = useState<string | null>(null);
   const [lastAnimatedStartIndex, setLastAnimatedStartIndex] = useState<number>(0);
 
@@ -77,42 +76,28 @@ export default function PostPage() {
     const hasText = inputText.trim() !== '';
     const hasImage = !!imageFile;
 
-    // どちらも空なら投稿しない
     if (!hasText && !hasImage) return;
 
     let imageUrl = '';
-
     if (hasImage && imageFile) {
       try {
-        console.log("📁 画像ファイル準備OK:", imageFile);
         const imageRef = ref(storage, `images/${Date.now()}_${imageFile.name}`);
         await uploadBytes(imageRef, imageFile);
         imageUrl = await getDownloadURL(imageRef);
-        console.log("✅ 画像アップロード成功:", imageUrl);
       } catch (error) {
-        console.error("❌ 画像アップロード失敗:", error);
+        console.error('❌ 画像アップロード失敗:', error);
         return;
       }
     }
 
-    const trimmedText = inputText.trim();
+    const newPostText = inputText.trim();
+    const lastPost = posts[posts.length - 1];
+    const combinedText = lastPost ? `${lastPost.text}\n${newPostText}` : newPostText;
 
-    if (newlineEnabled || posts.length === 0) {
-      await addPost({ text: trimmedText, imageUrl });  // 🔽 ←これが重要
-      console.log("📝 投稿内容:", { text: trimmedText, imageUrl });
-    } else if (hasText) {
-      const lastPost = posts[posts.length - 1];
-      const newText = lastPost.text + trimmedText;
-      await updatePostText(lastPost.id, newText);
-    }
+    await addPost({ text: combinedText, imageUrl });
 
     setInputText('');
     setImageFile(null);
-  }
-
-
-  function toggleNewline() {
-    setNewlineEnabled((prev) => !prev);
   }
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -127,26 +112,20 @@ export default function PostPage() {
 
     return (
       <>
-        {/* テキストがある場合のみ表示 */}
         {post.text && post.text.trim() !== '' && post.text.split('\n').map((line, lineIndex) => (
           <div key={lineIndex} style={{ lineHeight: '1.5', margin: 0 }}>
             {[...line].map((char, i) => {
               const animate = globalIndex >= animateFrom;
-              const style = animate
-                ? { animationDelay: `${(globalIndex - animateFrom) * 0.05}s`, opacity: 0 }
-                : { opacity: 1 };
+              const style = animate ? { animationDelay: `${(globalIndex - animateFrom) * 0.05}s`, opacity: 0 } : { opacity: 1 };
               const className = animate ? 'letter' : '';
               globalIndex++;
               return (
-                <span key={`${lineIndex}-${i}`} className={className} style={style}>
-                  {char}
-                </span>
+                <span key={`${lineIndex}-${i}`} className={className} style={style}>{char}</span>
               );
             })}
           </div>
         ))}
 
-        {/* 画像がある場合表示 */}
         {post.imageUrl && (
           <div className="flex justify-center my-3">
             <img
@@ -159,7 +138,6 @@ export default function PostPage() {
       </>
     );
   }
-
 
   return (
     <>
@@ -174,35 +152,11 @@ export default function PostPage() {
       `}</style>
 
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <header
-          style={{
-            padding: '12px 0',
-            textAlign: 'center',
-            fontWeight: 'bold',
-            fontSize: '1.8rem',
-            backgroundColor: '#fafafa',
-            borderBottom: '1px solid #ccc',
-            userSelect: 'none',
-            color: '#000',
-          }}
-        >
+        <header style={{ padding: '12px 0', textAlign: 'center', fontWeight: 'bold', fontSize: '1.8rem', backgroundColor: '#fafafa', borderBottom: '1px solid #ccc', userSelect: 'none', color: '#000' }}>
           Word Farm
         </header>
 
-        <div
-          id="postArea"
-          ref={postAreaRef}
-          style={{
-            flex: 1,
-            padding: 16,
-            overflowY: 'auto',
-            whiteSpace: 'pre-wrap',
-            overflowWrap: 'break-word',
-            wordBreak: 'break-word',
-            background: '#fff',
-            color: '#000',
-          }}
-        >
+        <div id="postArea" ref={postAreaRef} style={{ flex: 1, padding: 16, overflowY: 'auto', whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'break-word', background: '#fff', color: '#000' }}>
           {posts.map((post) => (
             <div key={post.id} style={{ margin: '8px 0' }}>
               {renderPostText(post)}
@@ -210,40 +164,16 @@ export default function PostPage() {
           ))}
         </div>
 
-        <div
-          id="formContainer"
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            padding: 8,
-            borderTop: '1px solid #ccc',
-            background: '#fafafa',
-            gap: 8,
-          }}
-        >
+        <div id="formContainer" style={{ display: 'flex', flexDirection: 'column', padding: 8, borderTop: '1px solid #ccc', background: '#fafafa', gap: 8 }}>
           <textarea
             id="messageInput"
             rows={1}
             placeholder="write your words."
-            style={{
-              fontSize: 16,
-              padding: '6px 8px',
-              lineHeight: 1.5,
-              resize: 'none',
-              border: '1px solid #ccc',
-              borderRadius: 4,
-              boxSizing: 'border-box',
-              minHeight: 38,
-              height: 38,
-              color: '#000',
-            }}
+            style={{ fontSize: 16, padding: '6px 8px', lineHeight: 1.5, resize: 'none', border: '1px solid #ccc', borderRadius: 4, boxSizing: 'border-box', minHeight: 38, height: 38, color: '#000' }}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key.toLowerCase() === 'a' && e.ctrlKey) {
-                e.preventDefault();
-                toggleNewline();
-              } else if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
+              if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
                 e.preventDefault();
                 submitPost();
               }
@@ -252,39 +182,12 @@ export default function PostPage() {
 
           <input type="file" accept="image/*" onChange={handleImageChange} />
 
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              onClick={toggleNewline}
-              style={{
-                fontSize: 20,
-                backgroundColor: newlineEnabled ? '#3399ff' : '#ddd',
-                color: newlineEnabled ? 'white' : '#333',
-                width: 38,
-                textAlign: 'center',
-                border: 'none',
-                cursor: 'pointer',
-                borderRadius: 4,
-                height: 38,
-              }}
-            >
-              ↵
-            </button>
-            <button
-              onClick={submitPost}
-              style={{
-                backgroundColor: '#4CAF50',
-                color: 'white',
-                fontSize: 14,
-                padding: '0 14px',
-                border: 'none',
-                cursor: 'pointer',
-                borderRadius: 4,
-                height: 38,
-              }}
-            >
-              post
-            </button>
-          </div>
+          <button
+            onClick={submitPost}
+            style={{ backgroundColor: '#4CAF50', color: 'white', fontSize: 14, padding: '0 14px', border: 'none', cursor: 'pointer', borderRadius: 4, height: 38 }}
+          >
+            post
+          </button>
         </div>
       </div>
     </>
