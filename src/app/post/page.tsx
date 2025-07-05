@@ -1,12 +1,12 @@
 /*
 git add .
-git commit -m "update"
+git commit -m "remove scroll control and adjust image size"
 git push
 */
 
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { addPost, subscribePosts } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../../firebaseConfig';
@@ -24,49 +24,22 @@ export default function PostPage() {
   const [lastAnimatedPostId, setLastAnimatedPostId] = useState<string | null>(null);
   const [lastAnimatedStartIndex, setLastAnimatedStartIndex] = useState<number>(0);
 
-  const isInitialLoad = useRef(true);
-  const postAreaRef = useRef<HTMLDivElement>(null);
-
-  function scrollToBottom() {
-    const el = postAreaRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }
-
-  function isScrolledToBottom(): boolean {
-    const el = postAreaRef.current;
-    return el ? el.scrollHeight - el.scrollTop - el.clientHeight < 10 : false;
-  }
-
   useEffect(() => {
     const unsubscribe = subscribePosts((newPosts) => {
-      const wasAtBottom = isScrolledToBottom();
-
       const prevPost = posts[posts.length - 1];
       const newPost = newPosts[newPosts.length - 1];
 
       setPosts(newPosts);
 
-      requestAnimationFrame(() => {
-        if (isInitialLoad.current) {
-          isInitialLoad.current = false;
-          scrollToBottom();
-          return;
+      if (newPost) {
+        if (!prevPost || prevPost.id !== newPost.id) {
+          setLastAnimatedPostId(newPost.id);
+          setLastAnimatedStartIndex(0);
+        } else if (prevPost.text.length < newPost.text.length) {
+          setLastAnimatedPostId(newPost.id);
+          setLastAnimatedStartIndex(prevPost.text.length);
         }
-
-        if (newPost) {
-          if (!prevPost || prevPost.id !== newPost.id) {
-            setLastAnimatedPostId(newPost.id);
-            setLastAnimatedStartIndex(0);
-          } else if (prevPost.text.length < newPost.text.length) {
-            setLastAnimatedPostId(newPost.id);
-            setLastAnimatedStartIndex(prevPost.text.length);
-          }
-        }
-
-        if (wasAtBottom) {
-          scrollToBottom();
-        }
-      });
+      }
     });
 
     return () => unsubscribe();
@@ -75,7 +48,6 @@ export default function PostPage() {
   async function submitPost() {
     const hasText = inputText.trim() !== '';
     const hasImage = !!imageFile;
-
     if (!hasText && !hasImage) return;
 
     let imageUrl = '';
@@ -156,7 +128,7 @@ export default function PostPage() {
           Word Farm
         </header>
 
-        <div id="postArea" ref={postAreaRef} style={{ flex: 1, padding: 16, overflowY: 'auto', scrollBehavior: 'smooth', whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'break-word', background: '#fff', color: '#000' }}>
+        <div id="postArea" style={{ flex: 1, padding: 16, overflowY: 'auto', whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'break-word', background: '#fff', color: '#000' }}>
           {posts.map((post) => (
             <div key={post.id} style={{ margin: '8px 0' }}>
               {renderPostText(post)}
