@@ -50,13 +50,7 @@ export default function PostPage() {
 
     let imageUrl = '';
     if (hasImage && imageFile) {
-      if (!imageFile.size || imageFile.size === 0) {
-        console.error('❌ 無効な画像ファイルです');
-        return;
-      }
-
       try {
-        await new Promise((res) => setTimeout(res, 100)); // スマホ対策：少し遅延
         const imageRef = ref(storage, `images/${Date.now()}_${imageFile.name}`);
         await uploadBytes(imageRef, imageFile);
         imageUrl = await getDownloadURL(imageRef);
@@ -70,14 +64,8 @@ export default function PostPage() {
 
     setInputText('');
     setImageFile(null);
-
     const input = document.getElementById('imageInput') as HTMLInputElement;
     if (input) input.value = '';
-  }
-
-  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0] || null;
-    setImageFile(file);
   }
 
   function renderPostText(post: Post) {
@@ -218,10 +206,18 @@ export default function PostPage() {
               id="imageInput"
               type="file"
               accept="image/*"
-              onChange={handleImageChange}
               onClick={(e) => {
-                // 同じファイル選択時にもイベントを発火させる
+                // 同じファイルでもonChangeが動くように
                 (e.target as HTMLInputElement).value = '';
+              }}
+              onChange={(e) => {
+                const file = e.target.files?.[0] || null;
+                if (file && file.size > 0) {
+                  setImageFile(file);
+                } else {
+                  setImageFile(null);
+                  console.warn('❌ 無効なファイル');
+                }
               }}
             />
           </div>
