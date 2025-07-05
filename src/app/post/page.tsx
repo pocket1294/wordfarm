@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { addPost, subscribePosts } from '@/lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../../../firebaseConfig';
 import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 
@@ -68,8 +68,18 @@ export default function PostPage() {
     if (hasImage && imageFile) {
       try {
         const imageRef = ref(storage, `images/${Date.now()}_${imageFile.name}`);
-        await uploadBytes(imageRef, imageFile);
-        imageUrl = await getDownloadURL(imageRef);
+        const uploadTask = uploadBytesResumable(imageRef, imageFile);
+
+        await new Promise((resolve, reject) => {
+          uploadTask.on(
+            'state_changed',
+            null,
+            (error) => reject(error),
+            () => resolve(null)
+          );
+        });
+
+        imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
       } catch (error) {
         console.error('❌ 画像アップロード失敗:', error);
         return;
@@ -86,7 +96,14 @@ export default function PostPage() {
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] || null;
     if (file && file.size > 0) {
-      setImageFile(file);
+      const reader = new FileReader();
+      reader.onload = () => {
+        const arrayBuffer = reader.result as ArrayBuffer;
+        const blobCopy = new Blob([arrayBuffer], { type: file.type });
+        const safeFile = new File([blobCopy], file.name, { type: file.type });
+        setImageFile(safeFile);
+      };
+      reader.readAsArrayBuffer(file);
     } else {
       setImageFile(null);
     }
@@ -231,7 +248,10 @@ export default function PostPage() {
               id="imageInput"
               type="file"
               accept="image/*"
-              onChange={handleImageChange}
+              onChange={(e) => {
+                handleImageChange(e);
+                setImageInputKey(Date.now()); // 👈 inputの再生成
+              }}
             />
           </div>
         </form>
