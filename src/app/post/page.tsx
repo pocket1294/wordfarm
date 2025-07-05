@@ -1,12 +1,12 @@
 /*
 git add .
-git commit -m "fix: post each message independently with optional image"
+git commit -m "fix image upload issues on mobile and separate each post"
 git push
 */
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { addPost, subscribePosts } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../../../firebaseConfig';
@@ -23,6 +23,7 @@ export default function PostPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [lastAnimatedPostId, setLastAnimatedPostId] = useState<string | null>(null);
   const [lastAnimatedStartIndex, setLastAnimatedStartIndex] = useState<number>(0);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const unsubscribe = subscribePosts((newPosts) => {
@@ -46,37 +47,38 @@ export default function PostPage() {
   }, [posts]);
 
   async function submitPost() {
-    const trimmedText = inputText.trim();
-    const hasText = trimmedText !== '';
+    const hasText = inputText.trim() !== '';
     const hasImage = !!imageFile;
-
     if (!hasText && !hasImage) return;
 
     let imageUrl = '';
-
     if (hasImage && imageFile) {
+      if (imageFile.size === 0) {
+        console.error('⚠️ 空の画像ファイルです。');
+        return;
+      }
+
       try {
         const imageRef = ref(storage, `images/${Date.now()}_${imageFile.name}`);
         await uploadBytes(imageRef, imageFile);
         imageUrl = await getDownloadURL(imageRef);
+        console.log('✅ 画像アップロード成功:', imageUrl);
       } catch (error) {
         console.error('❌ 画像アップロード失敗:', error);
         return;
       }
     }
 
-    await addPost({ text: trimmedText, imageUrl });
+    await addPost({ text: inputText.trim(), imageUrl });
 
     setInputText('');
     setImageFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] || null;
     setImageFile(file);
-
-    // 同じ画像を連続で選べるようにリセット
-    e.target.value = '';
   }
 
   function renderPostText(post: Post) {
@@ -90,9 +92,7 @@ export default function PostPage() {
           <div key={lineIndex} style={{ lineHeight: '1.5', margin: 0 }}>
             {[...line].map((char, i) => {
               const animate = globalIndex >= animateFrom;
-              const style = animate
-                ? { animationDelay: `${(globalIndex - animateFrom) * 0.05}s`, opacity: 0 }
-                : { opacity: 1 };
+              const style = animate ? { animationDelay: `${(globalIndex - animateFrom) * 0.05}s`, opacity: 0 } : { opacity: 1 };
               const className = animate ? 'letter' : '';
               globalIndex++;
               return (
@@ -164,7 +164,12 @@ export default function PostPage() {
             </button>
           </div>
 
-          <input type="file" accept="image/*" onChange={handleImageChange} />
+          <input
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
+            onChange={handleImageChange}
+          />
         </div>
       </div>
     </>
