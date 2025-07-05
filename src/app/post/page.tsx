@@ -234,9 +234,6 @@ export default function PostPage() {
               id="imageInput"
               type="file"
               accept="image/*"
-              onClick={(e) => {
-                (e.target as HTMLInputElement).value = '';
-              }}
               onChange={handleImageChange}
             />
           </div>
