@@ -70,8 +70,12 @@ export default function PostPage() {
     let imageUrl = '';
     if (hasImage && imageFile) {
       try {
-        const imageRef = ref(storage, `images/${Date.now()}_${imageFile.name}`);
-        await uploadBytes(imageRef, imageFile);
+        const fileClone = new File([imageFile.slice()], imageFile.name, {
+          type: imageFile.type,
+          lastModified: imageFile.lastModified,
+        });
+        const imageRef = ref(storage, `images/${Date.now()}_${fileClone.name}`);
+        await uploadBytes(imageRef, fileClone);
         imageUrl = await getDownloadURL(imageRef);
       } catch (error) {
         console.error('❌ 画像アップロード失敗:', error);
