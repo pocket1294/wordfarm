@@ -1,6 +1,6 @@
 /*
 git add .
-git commit -m "remove scroll control and adjust image size"
+git commit -m "fix: post each message independently with optional image"
 git push
 */
 
@@ -46,11 +46,14 @@ export default function PostPage() {
   }, [posts]);
 
   async function submitPost() {
-    const hasText = inputText.trim() !== '';
+    const trimmedText = inputText.trim();
+    const hasText = trimmedText !== '';
     const hasImage = !!imageFile;
+
     if (!hasText && !hasImage) return;
 
     let imageUrl = '';
+
     if (hasImage && imageFile) {
       try {
         const imageRef = ref(storage, `images/${Date.now()}_${imageFile.name}`);
@@ -62,11 +65,7 @@ export default function PostPage() {
       }
     }
 
-    const newPostText = inputText.trim();
-    const lastPost = posts[posts.length - 1];
-    const combinedText = lastPost ? `${lastPost.text}\n${newPostText}` : newPostText;
-
-    await addPost({ text: combinedText, imageUrl });
+    await addPost({ text: trimmedText, imageUrl });
 
     setInputText('');
     setImageFile(null);
@@ -75,6 +74,9 @@ export default function PostPage() {
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] || null;
     setImageFile(file);
+
+    // 同じ画像を連続で選べるようにリセット
+    e.target.value = '';
   }
 
   function renderPostText(post: Post) {
@@ -88,7 +90,9 @@ export default function PostPage() {
           <div key={lineIndex} style={{ lineHeight: '1.5', margin: 0 }}>
             {[...line].map((char, i) => {
               const animate = globalIndex >= animateFrom;
-              const style = animate ? { animationDelay: `${(globalIndex - animateFrom) * 0.05}s`, opacity: 0 } : { opacity: 1 };
+              const style = animate
+                ? { animationDelay: `${(globalIndex - animateFrom) * 0.05}s`, opacity: 0 }
+                : { opacity: 1 };
               const className = animate ? 'letter' : '';
               globalIndex++;
               return (
