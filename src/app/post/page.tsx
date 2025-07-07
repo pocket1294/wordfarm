@@ -248,10 +248,7 @@ export default function PostPage() {
               id="imageInput"
               type="file"
               accept="image/*"
-              onChange={(e) => {
-                handleImageChange(e);
-                setImageInputKey(Date.now()); // 👈 inputの再生成
-              }}
+              onChange={handleImageChange}
             />
           </div>
         </form>
