@@ -23,6 +23,8 @@ export default function PostPage() {
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const postsRef = useRef<Post[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const wasAtBottomRef = useRef(true);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
@@ -43,12 +45,32 @@ export default function PostPage() {
   }, []);
 
   useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const handleScroll = () => {
+      const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 10;
+      wasAtBottomRef.current = isAtBottom;
+    };
+    el.addEventListener('scroll', handleScroll);
+    handleScroll();
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
     const unsubscribe = subscribePosts((newPosts) => {
       const prevPost = postsRef.current[postsRef.current.length - 1];
       const newPost = newPosts[newPosts.length - 1];
 
       setPosts(newPosts);
       postsRef.current = newPosts;
+
+      if (scrollRef.current) {
+        const el = scrollRef.current;
+        const isInitial = postsRef.current.length === newPosts.length;
+        if (isInitial || wasAtBottomRef.current) {
+          el.scrollTop = el.scrollHeight;
+        }
+      }
 
       if (newPost) {
         if (!prevPost || prevPost.id !== newPost.id) {
@@ -186,6 +208,7 @@ export default function PostPage() {
 
         <div
           id="postArea"
+          ref={scrollRef}
           style={{
             flex: 1,
             padding: 16,
