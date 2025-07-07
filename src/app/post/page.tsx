@@ -17,11 +17,11 @@ export default function PostPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [inputText, setInputText] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imageInputKey, setImageInputKey] = useState<number>(Date.now());
   const [lastAnimatedPostId, setLastAnimatedPostId] = useState<string | null>(null);
   const [lastAnimatedStartIndex, setLastAnimatedStartIndex] = useState<number>(0);
   const [currentUid, setCurrentUid] = useState<string | null>(null);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const postsRef = useRef<Post[]>([]);
 
   useEffect(() => {
@@ -97,7 +97,9 @@ export default function PostPage() {
 
     setInputText('');
     setImageFile(null);
-    setImageInputKey(Date.now());
+    if (imageInputRef.current) {
+      imageInputRef.current.value = '';
+    }
   }
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -254,14 +256,11 @@ export default function PostPage() {
             </div>
 
             <input
-              key={imageInputKey}
               id="imageInput"
+              ref={imageInputRef}
               type="file"
               accept="image/*"
-              onChange={(e) => {
-                handleImageChange(e);
-                setImageInputKey(Date.now());
-              }}
+              onChange={handleImageChange}
             />
           </div>
         </form>
