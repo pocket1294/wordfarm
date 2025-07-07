@@ -23,8 +23,8 @@ export default function PostPage() {
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const postsRef = useRef<Post[]>([]);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const wasAtBottomRef = useRef(true);
+  const postAreaRef = useRef<HTMLDivElement>(null);
+  const isInitialScroll = useRef(true);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
@@ -32,12 +32,10 @@ export default function PostPage() {
         signInAnonymously(auth)
           .then((result) => {
             setCurrentUid(result.user.uid);
-            console.log('🔐 匿名ログイン完了');
           })
           .catch((err) => console.error('❌ 匿名ログイン失敗:', err));
       } else {
         setCurrentUid(user.uid);
-        console.log('✅ ログイン中 UID:', user.uid);
       }
     });
 
@@ -45,32 +43,17 @@ export default function PostPage() {
   }, []);
 
   useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const handleScroll = () => {
-      const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 10;
-      wasAtBottomRef.current = isAtBottom;
-    };
-    el.addEventListener('scroll', handleScroll);
-    handleScroll();
-    return () => el.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  useEffect(() => {
     const unsubscribe = subscribePosts((newPosts) => {
       const prevPost = postsRef.current[postsRef.current.length - 1];
       const newPost = newPosts[newPosts.length - 1];
 
+      const shouldScroll =
+        postAreaRef.current &&
+        postAreaRef.current.scrollTop + postAreaRef.current.clientHeight >=
+          postAreaRef.current.scrollHeight - 50;
+
       setPosts(newPosts);
       postsRef.current = newPosts;
-
-      if (scrollRef.current) {
-        const el = scrollRef.current;
-        const isInitial = postsRef.current.length === newPosts.length;
-        if (isInitial || wasAtBottomRef.current) {
-          el.scrollTop = el.scrollHeight;
-        }
-      }
 
       if (newPost) {
         if (!prevPost || prevPost.id !== newPost.id) {
@@ -80,6 +63,16 @@ export default function PostPage() {
           setLastAnimatedPostId(newPost.id);
           setLastAnimatedStartIndex(prevPost.text.length);
         }
+      }
+
+      // 初回ロード or 最下部にいるならスクロール
+      if (isInitialScroll.current || shouldScroll) {
+        setTimeout(() => {
+          if (postAreaRef.current) {
+            postAreaRef.current.scrollTop = postAreaRef.current.scrollHeight;
+          }
+        }, 50);
+        isInitialScroll.current = false;
       }
     });
 
@@ -100,12 +93,7 @@ export default function PostPage() {
         const uploadTask = uploadBytesResumable(imageRef, imageFile);
 
         await new Promise((resolve, reject) => {
-          uploadTask.on(
-            'state_changed',
-            null,
-            (error) => reject(error),
-            () => resolve(null)
-          );
+          uploadTask.on('state_changed', null, reject, () => resolve(null));
         });
 
         imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
@@ -140,23 +128,24 @@ export default function PostPage() {
 
     return (
       <div onClick={() => setSelectedPostId(post.id)}>
-        {post.text?.trim() && post.text.split('\n').map((line, lineIndex) => (
-          <div key={lineIndex} style={{ lineHeight: '1.5', margin: 0 }}>
-            {[...line].map((char, i) => {
-              const animate = globalIndex >= animateFrom;
-              const style = animate
-                ? { animationDelay: `${(globalIndex - animateFrom) * 0.05}s`, opacity: 0 }
-                : { opacity: 1 };
-              const className = animate ? 'letter' : '';
-              globalIndex++;
-              return (
-                <span key={`${lineIndex}-${i}`} className={className} style={style}>
-                  {char}
-                </span>
-              );
-            })}
-          </div>
-        ))}
+        {post.text?.trim() &&
+          post.text.split('\n').map((line, lineIndex) => (
+            <div key={lineIndex} style={{ lineHeight: '1.5', margin: 0 }}>
+              {[...line].map((char, i) => {
+                const animate = globalIndex >= animateFrom;
+                const style = animate
+                  ? { animationDelay: `${(globalIndex - animateFrom) * 0.05}s`, opacity: 0 }
+                  : { opacity: 1 };
+                const className = animate ? 'letter' : '';
+                globalIndex++;
+                return (
+                  <span key={`${lineIndex}-${i}`} className={className} style={style}>
+                    {char}
+                  </span>
+                );
+              })}
+            </div>
+          ))}
         {post.imageUrl && (
           <div className="flex justify-center my-3">
             <img
@@ -193,22 +182,24 @@ export default function PostPage() {
       `}</style>
 
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <header style={{
-          padding: '12px 0',
-          textAlign: 'center',
-          fontWeight: 'bold',
-          fontSize: '1.8rem',
-          backgroundColor: '#fafafa',
-          borderBottom: '1px solid #ccc',
-          userSelect: 'none',
-          color: '#000'
-        }}>
+        <header
+          style={{
+            padding: '12px 0',
+            textAlign: 'center',
+            fontWeight: 'bold',
+            fontSize: '1.8rem',
+            backgroundColor: '#fafafa',
+            borderBottom: '1px solid #ccc',
+            userSelect: 'none',
+            color: '#000',
+          }}
+        >
           Word Farm
         </header>
 
         <div
           id="postArea"
-          ref={scrollRef}
+          ref={postAreaRef}
           style={{
             flex: 1,
             padding: 16,
@@ -255,7 +246,7 @@ export default function PostPage() {
                   boxSizing: 'border-box',
                   minHeight: 38,
                   maxWidth: '100%',
-                  color: '#000'
+                  color: '#000',
                 }}
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
