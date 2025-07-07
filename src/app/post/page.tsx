@@ -258,6 +258,12 @@ export default function PostPage() {
                 }}
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault(); // 改行を防ぐ
+                    submitPost(); // 投稿処理
+                  }
+                }}
               />
               <button
                 type="submit"
