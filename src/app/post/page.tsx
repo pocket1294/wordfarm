@@ -24,7 +24,6 @@ export default function PostPage() {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const postsRef = useRef<Post[]>([]);
   const postAreaRef = useRef<HTMLDivElement>(null);
-  const isInitialScroll = useRef(true);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
@@ -32,10 +31,12 @@ export default function PostPage() {
         signInAnonymously(auth)
           .then((result) => {
             setCurrentUid(result.user.uid);
+            console.log('🔐 匿名ログイン完了');
           })
           .catch((err) => console.error('❌ 匿名ログイン失敗:', err));
       } else {
         setCurrentUid(user.uid);
+        console.log('✅ ログイン中 UID:', user.uid);
       }
     });
 
@@ -47,13 +48,11 @@ export default function PostPage() {
       const prevPost = postsRef.current[postsRef.current.length - 1];
       const newPost = newPosts[newPosts.length - 1];
 
-      const shouldScroll =
-        postAreaRef.current &&
-        postAreaRef.current.scrollTop + postAreaRef.current.clientHeight >=
-          postAreaRef.current.scrollHeight - 50;
-
       setPosts(newPosts);
       postsRef.current = newPosts;
+
+      const postArea = postAreaRef.current;
+      const isAtBottom = postArea && postArea.scrollTop + postArea.clientHeight >= postArea.scrollHeight - 20;
 
       if (newPost) {
         if (!prevPost || prevPost.id !== newPost.id) {
@@ -65,18 +64,21 @@ export default function PostPage() {
         }
       }
 
-      // 初回ロード or 最下部にいるならスクロール
-      if (isInitialScroll.current || shouldScroll) {
+      if (postArea && isAtBottom) {
         setTimeout(() => {
-          if (postAreaRef.current) {
-            postAreaRef.current.scrollTop = postAreaRef.current.scrollHeight;
-          }
-        }, 50);
-        isInitialScroll.current = false;
+          postArea.scrollTop = postArea.scrollHeight;
+        }, 100);
       }
     });
 
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const postArea = postAreaRef.current;
+    if (postArea) {
+      postArea.scrollTop = postArea.scrollHeight;
+    }
   }, []);
 
   async function submitPost(e?: React.FormEvent) {
@@ -93,7 +95,12 @@ export default function PostPage() {
         const uploadTask = uploadBytesResumable(imageRef, imageFile);
 
         await new Promise((resolve, reject) => {
-          uploadTask.on('state_changed', null, reject, () => resolve(null));
+          uploadTask.on(
+            'state_changed',
+            null,
+            (error) => reject(error),
+            () => resolve(null)
+          );
         });
 
         imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
@@ -128,30 +135,33 @@ export default function PostPage() {
 
     return (
       <div onClick={() => setSelectedPostId(post.id)}>
-        {post.text?.trim() &&
-          post.text.split('\n').map((line, lineIndex) => (
-            <div key={lineIndex} style={{ lineHeight: '1.5', margin: 0 }}>
-              {[...line].map((char, i) => {
-                const animate = globalIndex >= animateFrom;
-                const style = animate
-                  ? { animationDelay: `${(globalIndex - animateFrom) * 0.05}s`, opacity: 0 }
-                  : { opacity: 1 };
-                const className = animate ? 'letter' : '';
-                globalIndex++;
-                return (
-                  <span key={`${lineIndex}-${i}`} className={className} style={style}>
-                    {char}
-                  </span>
-                );
-              })}
-            </div>
-          ))}
+        {post.text?.trim() && post.text.split('\n').map((line, lineIndex) => (
+          <div key={lineIndex} style={{ lineHeight: '1.5', margin: 0 }}>
+            {[...line].map((char, i) => {
+              const animate = globalIndex >= animateFrom;
+              const style = animate
+                ? { animationDelay: `${(globalIndex - animateFrom) * 0.05}s`, opacity: 0 }
+                : { opacity: 1 };
+              const className = animate ? 'letter' : '';
+              globalIndex++;
+              return (
+                <span key={`${lineIndex}-${i}`} className={className} style={style}>
+                  {char}
+                </span>
+              );
+            })}
+          </div>
+        ))}
         {post.imageUrl && (
           <div className="flex justify-center my-3">
             <img
               src={post.imageUrl}
               alt="投稿画像"
               className="w-full max-w-[170px] h-auto rounded-xl shadow-md"
+              onLoad={() => {
+                const postArea = postAreaRef.current;
+                if (postArea) postArea.scrollTop = postArea.scrollHeight;
+              }}
             />
           </div>
         )}
@@ -182,18 +192,16 @@ export default function PostPage() {
       `}</style>
 
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <header
-          style={{
-            padding: '12px 0',
-            textAlign: 'center',
-            fontWeight: 'bold',
-            fontSize: '1.8rem',
-            backgroundColor: '#fafafa',
-            borderBottom: '1px solid #ccc',
-            userSelect: 'none',
-            color: '#000',
-          }}
-        >
+        <header style={{
+          padding: '12px 0',
+          textAlign: 'center',
+          fontWeight: 'bold',
+          fontSize: '1.8rem',
+          backgroundColor: '#fafafa',
+          borderBottom: '1px solid #ccc',
+          userSelect: 'none',
+          color: '#000'
+        }}>
           Word Farm
         </header>
 
@@ -246,7 +254,7 @@ export default function PostPage() {
                   boxSizing: 'border-box',
                   minHeight: 38,
                   maxWidth: '100%',
-                  color: '#000',
+                  color: '#000'
                 }}
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
