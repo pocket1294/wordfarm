@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { addPost, subscribePosts } from '@/lib/firebase';
+import { addPost, subscribePosts, deletePost } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../../../firebaseConfig';
 import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
@@ -10,6 +10,7 @@ type Post = {
   id: string;
   text: string;
   imageUrl?: string;
+  uid?: string;
 };
 
 export default function PostPage() {
@@ -19,15 +20,21 @@ export default function PostPage() {
   const [imageInputKey, setImageInputKey] = useState<number>(Date.now());
   const [lastAnimatedPostId, setLastAnimatedPostId] = useState<string | null>(null);
   const [lastAnimatedStartIndex, setLastAnimatedStartIndex] = useState<number>(0);
+  const [currentUid, setCurrentUid] = useState<string | null>(null);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const postsRef = useRef<Post[]>([]);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (!user) {
         signInAnonymously(auth)
-          .then(() => console.log('🔐 匿名ログイン完了'))
+          .then((result) => {
+            setCurrentUid(result.user.uid);
+            console.log('🔐 匿名ログイン完了');
+          })
           .catch((err) => console.error('❌ 匿名ログイン失敗:', err));
       } else {
+        setCurrentUid(user.uid);
         console.log('✅ ログイン中 UID:', user.uid);
       }
     });
@@ -86,7 +93,7 @@ export default function PostPage() {
       }
     }
 
-    await addPost({ text: inputText.trim(), imageUrl });
+    await addPost({ text: inputText.trim(), imageUrl, uid: currentUid ?? '' });
 
     setInputText('');
     setImageFile(null);
@@ -96,14 +103,7 @@ export default function PostPage() {
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] || null;
     if (file && file.size > 0) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const arrayBuffer = reader.result as ArrayBuffer;
-        const blobCopy = new Blob([arrayBuffer], { type: file.type });
-        const safeFile = new File([blobCopy], file.name, { type: file.type });
-        setImageFile(safeFile);
-      };
-      reader.readAsArrayBuffer(file);
+      setImageFile(file);
     } else {
       setImageFile(null);
     }
@@ -115,7 +115,7 @@ export default function PostPage() {
     let globalIndex = 0;
 
     return (
-      <>
+      <div onClick={() => setSelectedPostId(post.id)}>
         {post.text?.trim() && post.text.split('\n').map((line, lineIndex) => (
           <div key={lineIndex} style={{ lineHeight: '1.5', margin: 0 }}>
             {[...line].map((char, i) => {
@@ -142,7 +142,17 @@ export default function PostPage() {
             />
           </div>
         )}
-      </>
+        {post.uid === currentUid && selectedPostId === post.id && (
+          <div style={{ marginTop: 4 }}>
+            <button
+              onClick={() => deletePost(post.id)}
+              style={{ color: 'red', fontSize: 12 }}
+            >
+              この投稿を削除
+            </button>
+          </div>
+        )}
+      </div>
     );
   }
 
@@ -248,7 +258,10 @@ export default function PostPage() {
               id="imageInput"
               type="file"
               accept="image/*"
-              onChange={handleImageChange}
+              onChange={(e) => {
+                handleImageChange(e);
+                setImageInputKey(Date.now());
+              }}
             />
           </div>
         </form>

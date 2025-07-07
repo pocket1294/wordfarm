@@ -1,4 +1,3 @@
-// src/lib/firebase.ts
 import { initializeApp, getApps, getApp } from "firebase/app";
 import {
   getFirestore,
@@ -10,6 +9,7 @@ import {
   Timestamp,
   doc,
   updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -37,20 +37,24 @@ export type Post = {
   id: string;
   text: string;
   imageUrl?: string;
+  uid?: string;
 };
 
-// 投稿を新規追加（画像対応）
+// 投稿を新規追加（画像・uid対応）
 export async function addPost({
   text,
-  imageUrl = ''
+  imageUrl = '',
+  uid = ''
 }: {
   text: string;
   imageUrl?: string;
+  uid?: string;
 }) {
   try {
     await addDoc(collection(db, "posts"), {
       text,
       imageUrl,
+      uid,
       createdAt: Timestamp.now(),
     });
   } catch (error) {
@@ -58,20 +62,21 @@ export async function addPost({
   }
 }
 
-// 投稿をリアルタイムで購読（画像対応）
+// 投稿をリアルタイムで購読（画像・uid対応）
 export function subscribePosts(
-  callback: (posts: { id: string; text: string; imageUrl?: string }[]) => void
+  callback: (posts: Post[]) => void
 ) {
   const q = query(collection(db, "posts"), orderBy("createdAt", "asc"));
   return onSnapshot(q, (snapshot) => {
-    const posts: { id: string; text: string; imageUrl?: string }[] = [];
-    snapshot.forEach((doc) => {
-      const data = doc.data();
+    const posts: Post[] = [];
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
       if (typeof data.text === "string") {
         posts.push({
-          id: doc.id,
+          id: docSnap.id,
           text: data.text,
-          imageUrl: data.imageUrl || ''
+          imageUrl: data.imageUrl || '',
+          uid: data.uid || '',
         });
       }
     });
@@ -86,5 +91,15 @@ export async function updatePostText(id: string, newText: string) {
     await updateDoc(postRef, { text: newText });
   } catch (error) {
     console.error("投稿更新エラー: ", error);
+  }
+}
+
+// 投稿を削除
+export async function deletePost(id: string) {
+  try {
+    const postRef = doc(db, "posts", id);
+    await deleteDoc(postRef);
+  } catch (error) {
+    console.error("投稿削除エラー: ", error);
   }
 }
