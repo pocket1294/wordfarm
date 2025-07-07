@@ -134,7 +134,7 @@ export default function PostPage() {
     let globalIndex = 0;
 
     return (
-      <div onClick={() => setSelectedPostId(post.id)}>
+      <div onClick={() => setSelectedPostId(prev => prev === post.id ? null : post.id)}>
         {post.text?.trim() && post.text.split('\n').map((line, lineIndex) => (
           <div key={lineIndex} style={{ lineHeight: '1.5', margin: 0 }}>
             {[...line].map((char, i) => {
