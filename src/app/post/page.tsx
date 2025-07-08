@@ -192,7 +192,6 @@ export default function PostPage() {
   function renderPostText(post: Post) {
     const isAnimated = post.id === lastAnimatedPostId;
     const animateFrom = isAnimated ? lastAnimatedStartIndex : post.text?.length ?? 0;
-    let globalIndex = 0;
 
     return (
       <div onClick={() => setSelectedPostId(prev => prev === post.id ? null : post.id)}>
