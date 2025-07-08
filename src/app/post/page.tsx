@@ -5,7 +5,7 @@ import { addPost, subscribePosts, deletePost } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../../../firebaseConfig';
 import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-import linkify from 'linkifyjs';
+import * as linkify from 'linkifyjs'
 
 type Post = {
   id: string;
@@ -123,7 +123,7 @@ export default function PostPage() {
 
   function renderAnimatedTextWithLinks(text: string, animateFrom: number) {
     const matches = linkify.find(text);
-    let elements: React.ReactNode[] = [];
+    const elements: React.ReactNode[] = [];
     let lastIndex = 0;
     let globalIndex = 0;
 
