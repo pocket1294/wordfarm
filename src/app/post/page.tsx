@@ -5,6 +5,7 @@ import { addPost, subscribePosts, deletePost } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../../../firebaseConfig';
 import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import linkify from 'linkifyjs';
 
 type Post = {
   id: string;
@@ -119,6 +120,66 @@ export default function PostPage() {
     }
   }
 
+
+  function renderAnimatedTextWithLinks(text: string, animateFrom: number) {
+    const matches = linkify.find(text);
+    let elements: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let globalIndex = 0;
+
+    matches.forEach((match, i) => {
+      const { start, end, value, href } = match;
+
+      const before = text.slice(lastIndex, start);
+      [...before].forEach((char) => {
+        const animate = globalIndex >= animateFrom;
+        elements.push(
+          <span
+            key={`t-${i}-${globalIndex}`}
+            className={animate ? 'letter' : ''}
+            style={animate ? { animationDelay: `${(globalIndex - animateFrom) * 0.05}s`, opacity: 0 } : { opacity: 1 }}
+          >
+            {char}
+          </span>
+        );
+        globalIndex++;
+      });
+
+      elements.push(
+        <a
+          key={`a-${i}`}
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="auto-link"
+          style={{ color: 'blue', textDecoration: 'underline' }}
+        >
+          {value}
+        </a>
+      );
+      globalIndex += value.length;
+      lastIndex = end;
+    });
+
+    const rest = text.slice(lastIndex);
+    [...rest].forEach((char) => {
+      const animate = globalIndex >= animateFrom;
+      elements.push(
+        <span
+          key={`r-${globalIndex}`}
+          className={animate ? 'letter' : ''}
+          style={animate ? { animationDelay: `${(globalIndex - animateFrom) * 0.05}s`, opacity: 0 } : { opacity: 1 }}
+        >
+          {char}
+        </span>
+      );
+      globalIndex++;
+    });
+
+    return elements;
+  }
+
+
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] || null;
     if (file && file.size > 0) {
@@ -137,19 +198,7 @@ export default function PostPage() {
       <div onClick={() => setSelectedPostId(prev => prev === post.id ? null : post.id)}>
         {post.text?.trim() && post.text.split('\n').map((line, lineIndex) => (
           <div key={lineIndex} style={{ lineHeight: '1.5', margin: 0 }}>
-            {[...line].map((char, i) => {
-              const animate = globalIndex >= animateFrom;
-              const style = animate
-                ? { animationDelay: `${(globalIndex - animateFrom) * 0.05}s`, opacity: 0 }
-                : { opacity: 1 };
-              const className = animate ? 'letter' : '';
-              globalIndex++;
-              return (
-                <span key={`${lineIndex}-${i}`} className={className} style={style}>
-                  {char}
-                </span>
-              );
-            })}
+            {renderAnimatedTextWithLinks(line, animateFrom)}
           </div>
         ))}
         {post.imageUrl && (
