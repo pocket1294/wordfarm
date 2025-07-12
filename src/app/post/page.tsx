@@ -177,11 +177,20 @@ export default function PostPage() {
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] || null;
-    if (file && file.size > 0) {
-      setImageFile(file);
-    } else {
+    if (!file || file.size === 0) {
       setImageFile(null);
+      return;
     }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const newFile = new File([reader.result as ArrayBuffer], file.name, {
+        type: file.type,
+        lastModified: file.lastModified,
+      });
+      setImageFile(newFile);
+    };
+    reader.readAsArrayBuffer(file);
   }
 
   function renderPostText(post: Post) {
