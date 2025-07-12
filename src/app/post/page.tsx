@@ -118,8 +118,8 @@ export default function PostPage() {
     }
     
 
-    imageUrl = '';
-    await addPost({ text: inputText.trim(), imageUrl, uid: currentUid ?? '' });
+
+    //await addPost({ text: inputText.trim(), imageUrl, uid: currentUid ?? '' });
 
     setInputText('');
     setImageFile(null);
