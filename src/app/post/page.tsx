@@ -358,7 +358,10 @@ export default function PostPage() {
               >
                 Image
               </button>
-
+              
+              <span style={{ fontSize: 14, color: '#555', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '60%' }}>
+                {isUploading ? 'Uploading...' : imageFile?.name || ''}
+              </span>
             </div>
 
             <input
@@ -370,9 +373,6 @@ export default function PostPage() {
               style={{ display: 'none' }}
               capture={undefined}
             />
-            <div style={{ fontSize: 12, color: '#555' }}>
-              {isUploading ? 'Uploading...' : imageFile?.name || '選択されていません'}
-            </div>
 
           </div>
         </form>
