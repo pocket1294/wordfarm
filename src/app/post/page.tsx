@@ -89,7 +89,7 @@ export default function PostPage() {
     if (!hasText && !hasImage) return;
 
     setIsUploading(true); 
-    
+
     let imageUrl = '';
     if (hasImage && imageFile) {
       try {
@@ -231,7 +231,7 @@ export default function PostPage() {
               onClick={() => deletePost(post.id)}
               style={{ color: 'red', fontSize: 12 }}
             >
-              この投稿を削除
+              Remove 
             </button>
           </div>
         )}
@@ -356,11 +356,8 @@ export default function PostPage() {
                   cursor: 'pointer'
                 }}
               >
-                Select an Image
+                Image
               </button>
-              <span style={{ fontSize: 12, color: '#555', wordBreak: 'break-all' }}>
-                {imageFile ? imageFile.name || '📷 選択済み（ファイル名なし）' : ''}
-              </span>
 
             </div>
 
