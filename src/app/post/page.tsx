@@ -191,10 +191,16 @@ export default function PostPage() {
   }
 
 
+// 画像選択時の処理（モバイル対策済み）
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] || null;
     if (file && file.size > 0) {
       setImageFile(file);
+
+      // モバイルでの連続選択バグ防止：選択後に value を空にする
+      if (imageInputRef.current) {
+        imageInputRef.current.value = '';
+      }
     } else {
       setImageFile(null);
     }
@@ -347,6 +353,7 @@ export default function PostPage() {
               ref={imageInputRef}
               type="file"
               accept="image/*"
+              capture="environment"
               onChange={handleImageChange}
             />
           </div>
