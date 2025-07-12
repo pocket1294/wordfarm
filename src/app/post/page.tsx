@@ -90,6 +90,7 @@ export default function PostPage() {
     if (!hasText && !hasImage) return;
 
     let imageUrl = '';
+       /*
     if (hasImage && imageFile) {
       try {
         const imageRef = ref(storage, `images/${Date.now()}_${imageFile.name}`);
@@ -112,6 +113,7 @@ export default function PostPage() {
         return;
       }
     }
+    */
 
     await addPost({ text: inputText.trim(), imageUrl, uid: currentUid ?? '' });
 
@@ -120,6 +122,7 @@ export default function PostPage() {
     if (imageInputRef.current) {
       imageInputRef.current.value = '';
     }
+
   }
 
 
