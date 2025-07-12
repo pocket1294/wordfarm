@@ -93,7 +93,9 @@ export default function PostPage() {
     if (hasImage && imageFile) {
       try {
         const imageRef = ref(storage, `images/${Date.now()}_${imageFile.name}`);
-        const uploadTask = uploadBytesResumable(imageRef, imageFile);
+        const stableImage = new File([imageFile], imageFile.name, { type: imageFile.type });
+        const uploadTask = uploadBytesResumable(imageRef, stableImage);
+
 
         await new Promise((resolve, reject) => {
           uploadTask.on(
