@@ -348,10 +348,10 @@ export default function PostPage() {
                   cursor: 'pointer'
                 }}
               >
-                画像を選択
+                Select an Image
               </button>
               <span style={{ fontSize: 12, color: '#555', wordBreak: 'break-all' }}>
-                {imageFile ? imageFile.name || '📷 選択済み（ファイル名なし）' : '選択されていません'}
+                {imageFile ? imageFile.name || '📷 選択済み（ファイル名なし）' : ''}
               </span>
 
             </div>
