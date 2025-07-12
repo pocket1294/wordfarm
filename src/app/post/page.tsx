@@ -1,5 +1,4 @@
-/* eslint-disable prefer-const */
-/* eslint-disable @typescript-eslint/no-unused-vars */
+// PostPage.tsx (修正済み全文)
 
 'use client';
 
@@ -8,14 +7,15 @@ import { addPost, subscribePosts, deletePost } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { storage, auth } from '../../../firebaseConfig';
 import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-import * as linkify from 'linkifyjs'
+import * as linkify from 'linkifyjs';
 
-type Post = {
+// 型定義
+interface Post {
   id: string;
   text: string;
   imageUrl?: string;
   uid?: string;
-};
+}
 
 export default function PostPage() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -32,18 +32,13 @@ export default function PostPage() {
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (!user) {
-        signInAnonymously(auth)
-          .then((result) => {
-            setCurrentUid(result.user.uid);
-            console.log('🔐 匿名ログイン完了');
-          })
-          .catch((err) => console.error('❌ 匿名ログイン失敗:', err));
+        signInAnonymously(auth).then((result) => {
+          setCurrentUid(result.user.uid);
+        });
       } else {
         setCurrentUid(user.uid);
-        console.log('✅ ログイン中 UID:', user.uid);
       }
     });
-
     return () => unsubscribeAuth();
   }, []);
 
@@ -74,7 +69,6 @@ export default function PostPage() {
         }, 100);
       }
     });
-
     return () => unsubscribe();
   }, []);
 
@@ -93,7 +87,7 @@ export default function PostPage() {
     if (!hasText && !hasImage) return;
 
     let imageUrl = '';
-    if (imageFile) {
+    if (hasImage && imageFile) {
       try {
         const imageRef = ref(storage, `images/${Date.now()}_${imageFile.name}`);
         const uploadTask = uploadBytesResumable(imageRef, imageFile);
@@ -102,24 +96,17 @@ export default function PostPage() {
           uploadTask.on(
             'state_changed',
             null,
-            (error) =>{
-               console.error('アップロード中エラー',error);
-               reject(error)
-            },
+            (error) => reject(error),
             () => resolve(null)
-
           );
         });
-        
 
         imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
       } catch (error) {
-        console.error('❌ 画像アップロード失敗:', error);
+        console.error('画像アップロード失敗:', error);
         return;
       }
     }
-    
-
 
     await addPost({ text: inputText.trim(), imageUrl, uid: currentUid ?? '' });
 
@@ -128,9 +115,19 @@ export default function PostPage() {
     if (imageInputRef.current) {
       imageInputRef.current.value = '';
     }
-
   }
 
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] || null;
+    if (file && file.size > 0) {
+      setImageFile(file);
+      if (imageInputRef.current) {
+        imageInputRef.current.value = ''; // モバイルで安定させる
+      }
+    } else {
+      setImageFile(null);
+    }
+  }
 
   function renderAnimatedTextWithLinks(text: string, animateFrom: number) {
     const matches = linkify.find(text);
@@ -140,7 +137,6 @@ export default function PostPage() {
 
     matches.forEach((match, i) => {
       const { start, end, value, href } = match;
-
       const before = text.slice(lastIndex, start);
       [...before].forEach((char) => {
         const animate = globalIndex >= animateFrom;
@@ -155,16 +151,8 @@ export default function PostPage() {
         );
         globalIndex++;
       });
-
       elements.push(
-        <a
-          key={`a-${i}`}
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="auto-link"
-          style={{ color: 'blue', textDecoration: 'underline' }}
-        >
+        <a key={`a-${i}`} href={href} target="_blank" rel="noopener noreferrer" className="auto-link" style={{ color: 'blue', textDecoration: 'underline' }}>
           {value}
         </a>
       );
@@ -186,24 +174,7 @@ export default function PostPage() {
       );
       globalIndex++;
     });
-
     return elements;
-  }
-
-
-// 画像選択時の処理（モバイル対策済み）
-  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0] || null;
-    if (file && file.size > 0) {
-      setImageFile(file);
-
-      // モバイルでの連続選択バグ防止：選択後に value を空にする
-      if (imageInputRef.current) {
-        imageInputRef.current.value = '';
-      }
-    } else {
-      setImageFile(null);
-    }
   }
 
   function renderPostText(post: Post) {
@@ -232,10 +203,7 @@ export default function PostPage() {
         )}
         {post.uid === currentUid && selectedPostId === post.id && (
           <div style={{ marginTop: 4 }}>
-            <button
-              onClick={() => deletePost(post.id)}
-              style={{ color: 'red', fontSize: 12 }}
-            >
+            <button onClick={() => deletePost(post.id)} style={{ color: 'red', fontSize: 12 }}>
               この投稿を削除
             </button>
           </div>
@@ -245,120 +213,44 @@ export default function PostPage() {
   }
 
   return (
-    <>
-      <style>{`
-        .letter {
-          animation: fadeIn 1.5s ease forwards;
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-      `}</style>
-
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <header style={{
-          padding: '12px 0',
-          textAlign: 'center',
-          fontWeight: 'bold',
-          fontSize: '1.8rem',
-          backgroundColor: '#fafafa',
-          borderBottom: '1px solid #ccc',
-          userSelect: 'none',
-          color: '#000'
-        }}>
-          Word Farm
-        </header>
-
-        <div
-          id="postArea"
-          ref={postAreaRef}
-          style={{
-            flex: 1,
-            padding: 16,
-            overflowY: 'auto',
-            whiteSpace: 'pre-wrap',
-            overflowWrap: 'break-word',
-            wordBreak: 'break-word',
-            background: '#fff',
-            color: '#000',
-          }}
-        >
-          {posts.map((post) => (
-            <div key={post.id} style={{ margin: '8px 0' }}>
-              {renderPostText(post)}
-            </div>
-          ))}
-        </div>
-
-        <form onSubmit={submitPost}>
-          <div
-            id="formContainer"
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              padding: 8,
-              borderTop: '1px solid #ccc',
-              background: '#fafafa',
-              gap: 8,
-            }}
-          >
-            <div style={{ display: 'flex', gap: 8 }}>
-              <textarea
-                id="messageInput"
-                rows={1}
-                placeholder="write your words."
-                style={{
-                  flex: 1,
-                  fontSize: 16,
-                  padding: '6px 8px',
-                  lineHeight: 1.5,
-                  resize: 'none',
-                  border: '1px solid #ccc',
-                  borderRadius: 4,
-                  boxSizing: 'border-box',
-                  minHeight: 38,
-                  maxWidth: '100%',
-                  color: '#000'
-                }}
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault(); // 改行を防ぐ
-                    submitPost(); // 投稿処理
-                  }
-                }}
-              />
-              <button
-                type="submit"
-                style={{
-                  backgroundColor: '#4CAF50',
-                  color: 'white',
-                  fontSize: 14,
-                  padding: '0 16px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  borderRadius: 4,
-                  height: 38,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                post
-              </button>
-            </div>
-
-            <input
-              id="imageInput"
-              ref={imageInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={handleImageChange}
-            />
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <header style={{ padding: '12px 0', textAlign: 'center', fontWeight: 'bold', fontSize: '1.8rem', backgroundColor: '#fafafa', borderBottom: '1px solid #ccc' }}>
+        Word Farm
+      </header>
+      <div ref={postAreaRef} style={{ flex: 1, padding: 16, overflowY: 'auto', whiteSpace: 'pre-wrap', background: '#fff' }}>
+        {posts.map((post) => (
+          <div key={post.id} style={{ margin: '8px 0' }}>
+            {renderPostText(post)}
           </div>
-        </form>
+        ))}
       </div>
-    </>
+      <form onSubmit={submitPost}>
+        <div style={{ display: 'flex', flexDirection: 'column', padding: 8, borderTop: '1px solid #ccc', background: '#fafafa', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <textarea
+              rows={1}
+              placeholder="write your words."
+              style={{ flex: 1, fontSize: 16, padding: '6px 8px', border: '1px solid #ccc', borderRadius: 4 }}
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  submitPost();
+                }
+              }}
+            />
+            <button type="submit" style={{ backgroundColor: '#4CAF50', color: 'white', fontSize: 14, padding: '0 16px', borderRadius: 4 }}>post</button>
+          </div>
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleImageChange}
+          />
+        </div>
+      </form>
+    </div>
   );
 }
