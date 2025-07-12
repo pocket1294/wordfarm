@@ -93,13 +93,11 @@ export default function PostPage() {
     if (!hasText && !hasImage) return;
 
     let imageUrl = '';
-    if (hasImage && imageFile) {
+    if (imageFile) {
       try {
         const imageRef = ref(storage, `images/${Date.now()}_${imageFile.name}`);
-        const stableImage = new File([imageFile], imageFile.name, { type: imageFile.type });
-        const uploadTask = uploadBytesResumable(imageRef, stableImage);
+        const uploadTask = uploadBytesResumable(imageRef, imageFile);
 
-        
         await new Promise((resolve, reject) => {
           uploadTask.on(
             'state_changed',
@@ -119,7 +117,7 @@ export default function PostPage() {
     
 
 
-    //await addPost({ text: inputText.trim(), imageUrl, uid: currentUid ?? '' });
+    await addPost({ text: inputText.trim(), imageUrl, uid: currentUid ?? '' });
 
     setInputText('');
     setImageFile(null);
