@@ -16,6 +16,7 @@ type Post = {
 
 export default function PostPage() {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [isUploading, setIsUploading] = useState(false); 
   const [inputText, setInputText] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [lastAnimatedPostId, setLastAnimatedPostId] = useState<string | null>(null);
@@ -81,14 +82,18 @@ export default function PostPage() {
 
   async function submitPost(e?: React.FormEvent) {
     if (e) e.preventDefault();
+    if (isUploading) return; // ← 多重送信防止
 
     const hasText = inputText.trim() !== '';
     const hasImage = !!imageFile;
     if (!hasText && !hasImage) return;
 
+    setIsUploading(true); 
+    
     let imageUrl = '';
     if (hasImage && imageFile) {
       try {
+        setIsUploading(true); // ← アップロード開始
         const imageRef = ref(storage, `images/${Date.now()}_${imageFile.name}`);
         const uploadTask = uploadBytesResumable(imageRef, imageFile);
 
@@ -103,7 +108,8 @@ export default function PostPage() {
 
         imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
       } catch (error) {
-        console.error('画像アップロード失敗:', error);
+        console.error('❌ 画像アップロード失敗:', error);
+        setIsUploading(false);
         return;
       }
     }
@@ -115,7 +121,9 @@ export default function PostPage() {
     if (imageInputRef.current) {
       imageInputRef.current.value = '';
     }
+    setIsUploading(false); // ← 終了
   }
+
 
   function renderAnimatedTextWithLinks(text: string, animateFrom: number) {
     const matches = linkify.find(text);
@@ -365,6 +373,10 @@ export default function PostPage() {
               style={{ display: 'none' }}
               capture={undefined}
             />
+            <div style={{ fontSize: 12, color: '#555' }}>
+              {isUploading ? 'Uploading...' : imageFile?.name || '選択されていません'}
+            </div>
+
           </div>
         </form>
       </div>
