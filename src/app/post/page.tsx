@@ -88,6 +88,7 @@ export default function PostPage() {
     const hasImage = !!imageFile;
     if (!hasText && !hasImage) return;
 
+    setInputText('');
     setIsUploading(true); 
 
     let imageUrl = '';
@@ -116,7 +117,7 @@ export default function PostPage() {
 
     await addPost({ text: inputText.trim(), imageUrl, uid: currentUid ?? '' });
 
-    setInputText('');
+
     setImageFile(null);
     if (imageInputRef.current) {
       imageInputRef.current.value = '';
@@ -358,7 +359,7 @@ export default function PostPage() {
               >
                 Image
               </button>
-              
+
               <span style={{ fontSize: 14, color: '#555', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '60%' }}>
                 {isUploading ? 'Uploading...' : imageFile?.name || ''}
               </span>
