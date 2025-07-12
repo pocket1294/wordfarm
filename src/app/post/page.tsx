@@ -341,9 +341,10 @@ export default function PostPage() {
               >
                 画像を選択
               </button>
-              <span style={{ fontSize: 12, color: '#555' }}>
-                {imageFile?.name || '選択されていません'}
+              <span style={{ fontSize: 12, color: '#555', wordBreak: 'break-all' }}>
+                {imageFile ? imageFile.name || '📷 選択済み（ファイル名なし）' : '選択されていません'}
               </span>
+
             </div>
 
             <input
@@ -353,6 +354,7 @@ export default function PostPage() {
               accept="image/*"
               onChange={handleImageChange}
               style={{ display: 'none' }}
+              capture={undefined}
             />
           </div>
         </form>
