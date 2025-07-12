@@ -102,8 +102,12 @@ export default function PostPage() {
           uploadTask.on(
             'state_changed',
             null,
-            (error) => reject(error),
+            (error) =>{
+               console.error('アップロード中エラー',error);
+               reject(error)
+            },
             () => resolve(null)
+
           );
         });
         
